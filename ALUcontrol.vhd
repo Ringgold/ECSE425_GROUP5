@@ -29,7 +29,7 @@ architecture beh of ALUcontrol is
 
 begin
 
-	ALU_op <=	add when(opcode = "100000" or opcode = "100001" or opcode = "001000" or opcode = "001001") else
+	ALU_op <=		add when(opcode = "100000" or opcode = "100001" or opcode = "001000" or opcode = "001001") else
 					sub when(opcode = "100010" or opcode = "100011") else
 					mult when(opcode = "011000" or opcode = "011001") else
 					div when(opcode = "011010" or opcode = "011011") else

@@ -32,29 +32,34 @@ architecture beh of ALU is
 	signal shiftright_A : std_logic_vector(3 downto 0) := "1110";
 	signal beq : std_logic_vector(3 downto 0) := "1111";
 
+	signal long : std_logic_vector(63 downto 0);
+
 begin
-	hi <= std_logic_vector(signed(a) * signed(b))(63 downto 32) when(op = mult) else
+	
+	long <= std_logic_vector(signed(a) * signed(b));
+	
+	hi <= 	long(63 downto 32) when(op = mult) else
 			std_logic_vector(signed(a) rem signed(b)) when(op = div);
 
-	lo <= std_logic_vector(signed(a) * signed(b))(31 downto 0) when(op = mult) else
+	lo <= 	long(31 downto 0) when(op = mult) else
 			std_logic_vector(signed(a) / signed(b)) when(op = div);
 
 
-	result <=	a + b when(op = add) else
-					a - b when(op = sub) else
+	result <=		std_logic_vector(signed(a) + signed(b)) when(op = add) else
+					std_logic_vector(signed(a) - signed(b)) when(op = sub) else
 					a and b when(op = op_and) else
 					a or b when(op = op_or) else
 					a nor b when(op = op_nor) else
 					a xor b when(op = op_xor) else
 					hi when(op = mfhi) else
 					lo when(op = mflo) else
-					shift_left(a, 16) when(op = lui) else
-					shift_left(a, to_integer(b)) when(op = shiftleft_L) else
-					shift_right(a, to_integer(b)) when(op = shiftright_L) else
-					unsigned(shift_right(signed(a), to_integer(b))) when(op = shiftright_A) else
+					std_logic_vector(shift_left(signed(a), 16)) when(op = lui) else
+					std_logic_vector(shift_left(signed(a), to_integer(signed(b)))) when(op = shiftleft_L) else
+					std_logic_vector(shift_right(signed(a), to_integer(signed(b)))) when(op = shiftright_L) else
+					To_StdLogicVector(to_bitvector(a) sra to_integer(signed(b))) when(op = shiftright_A) else
 					"00000000000000000000000000000001" when(op = slt and a < b) else
 					"00000000000000000000000000000000";
 					
-	zero <=	'1' when(op = beq and a = b) else
+	zero <=		'1' when(op = beq and a = b) else
 				'0';
 end beh;
