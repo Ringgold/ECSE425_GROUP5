@@ -5,7 +5,12 @@ use ieee.numeric_std.all;
 entity Processor is
   port(
     clock : in std_logic;
-    reset : in std_logic
+    reset : in std_logic;
+    input : in std_logic_vector(31 downto 0);
+    start : in std_logic;
+    i_memread : out std_logic;
+    i_memwrite : out std_logic;
+    pc : out integer
   );
 end Processor;
 
@@ -19,12 +24,17 @@ architecture Pro_Arch of Processor is
   signal funct: std_logic_vector(5 downto 0);
   signal immediate: std_logic_vector(15 downto 0);
   signal address: std_logic_vector(25 downto 0);
+  signal stall: std_logic := '0';
   
   component IF_stage 
     port(
       clock : in std_logic;
       reset : in std_logic;
-      instruction : out std_logic_vector(31 downto 0)
+      stall : in std_logic;
+      start : in std_logic;
+      i_memread : out std_logic;
+      i_memwrite : out std_logic;
+      pc : out integer := 0
     );
   end component;
   
@@ -67,7 +77,16 @@ architecture Pro_Arch of Processor is
   
 begin
   
-
+  instruction_fetch_stage : IF_stage
+  port map(
+    clock => clock,
+    reset => reset,
+    stall => stall,
+    start => start,
+    i_memread => i_memread,
+    i_memwrite => i_memwrite,
+    pc => pc  
+  );
   
 end Pro_Arch;
 
