@@ -3,11 +3,10 @@ USE ieee.std_logic_1164.all;
 USE ieee.numeric_std.all;
 
 entity ALU is
-	generic(B: natural := 32);
 	port (
-		a, b: in std_logic_vector(B-1 downto 0);
+		a, b: in std_logic_vector(31 downto 0);
 		op: in std_logic_vector(3 downto 0);
-		result: out std_logic_vector(B-1 downto 0) := "00000000000000000000000000000000";
+		result: out std_logic_vector(31 downto 0) := "00000000000000000000000000000000";
 		zero: out std_logic := '0'
 	);
 end ALU;
