@@ -7,7 +7,9 @@ entity IF_stage is
     clock : in std_logic;
     reset : in std_logic;
     stall : in std_logic;
-    start : in std_logic;
+    start : in std_logic;   --program is ready to start (program fully transfered to i_memory)
+    branch : in std_logic;  -- enable branching
+    branch_adr : in integer; --branch address
     i_memread : out std_logic := '0';
     i_memwrite : out std_logic := '0';
     pc : out integer := 0
@@ -28,7 +30,11 @@ begin
         if rising_edge(clock) and stall = '0' then
           i_memread <= '1';
           i_memwrite <= '0';
-          program_counter <= program_counter + 1;
+          if branch = '1' then
+            program_counter <= branch_adr;
+          else
+            program_counter <= program_counter + 1;
+          end if;
           pc <= program_counter;
         end if;      
         if falling_edge(clock) then
