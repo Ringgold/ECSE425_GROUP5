@@ -4,22 +4,20 @@ use ieee.numeric_std.all;
 
 entity MEM_stage is
 	GENERIC(
-		ram_size : INTEGER := 32768;
-		mem_delay : time := 10 ns;
+		ram_size : INTEGER := 8192;
+		mem_delay : time := 1 ns;
 		clock_period : time := 1 ns
 	);
 	port(
 		clock : in std_logic;
-		--rdy: in std_logic; -- indicates if the stall is over
-		opcode : in std_logic_vector(5 downto 0); --operation code
+		stall: in std_logic; -- indicates if the stall is over
 		register_data: in std_logic_vector(31 downto 0); --RD2
-    	alu_result: in std_logic_vector(31 downto 0); -- redult from ALU
-    	destination_addr: in std_logic_vector (4 downto 0);
+    	alu_result: in std_logic_vector(31 downto 0); -- result from ALU
+    	memWrite: in std_logic;
+    	memRead: in std_logic;
 
     	memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
     	alu_result_go: out std_logic_vector(31 downto 0); -- redult from ALU to be forwarded to WB
-    	writeback_addr: out std_logic_vector(4 downto 0);
-
 	);
 end MEM_stage;
 
@@ -58,11 +56,11 @@ begin
     if rising_edge(clock) then
 
       	clk <= clock;
-      	alu <= "00000000000000000" & alu_result(14 downto 0);
+      	alu <= (signed(alu_result))/32; --get word counted data memory address
 
       	--Set read and write signals
-      	mr <= '1' when opcode = "100011";
-      	mw <= '1' when opcode = "101011";
+      	mr <= memRead;
+      	mw <= memWrite;
 
     end if;
 
@@ -72,9 +70,10 @@ end process;
 Stage_process : process (clock)
 begin
   	if rising_edge(clock) then
-	    alu_result <= alu_result_go;
-	    writeback_addr <= destination_addr;
-	    memory_data <= rd;
+  		if (stall='0') then
+		    alu_result <= alu_result_go;
+		    memory_data <= rd;
+		end if;
     end if;
 end process;
 	
