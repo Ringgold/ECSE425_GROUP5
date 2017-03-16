@@ -61,16 +61,7 @@ ALU1: ALU port map(RD1, Mux_res, Alu_op, Alu_res, Alu_zero);
 	execution: process(clock)
 	begin
 		if rising_edge(clock) then
-			if (stall='1') then
-				RD1 <= (others => '0');
-				RD2 <= (others => '0');
-				Immediate <= (others => '0');
-				Control_op <= (others => '0');
-				Mux_src <= '0';
-				mem_wdata <= (others => '0');
-				result <= (others => '0');
-				taken <= '0';
-			else
+			if (stall='0') then
 				RD1 <= rs;
 				RD2 <= rt;
 				Immediate <= imm;

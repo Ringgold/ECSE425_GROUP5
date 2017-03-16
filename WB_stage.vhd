@@ -33,12 +33,7 @@ MUX1: MUX port map(RD, Alu_res, Mux_src, Mux_res);
 	write_back: process(clock)
 	begin
 		if rising_edge(clock) then
-			if (stall='1') then
-				RD <= (others => '0');
-				Alu_res <= (others => '0');
-				Mux_src <= '0';
-				output <= (others => '0');
-			else
+			if (stall='0') then
 				RD <= read_data;
 				Alu_res <= alu_result;
 				Mux_src <= src;
