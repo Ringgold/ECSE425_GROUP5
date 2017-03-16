@@ -5,6 +5,7 @@ use ieee.numeric_std.all;
 entity EX_stage is
   port(
     clock : in std_logic;
+	stall: in std_logic;
     rs : in std_logic_vector(31 downto 0);
 	rt : in std_logic_vector(31 downto 0);
 	imm : in std_logic_vector(31 downto 0);
@@ -57,15 +58,30 @@ MUX1: MUX port map(RD2, Immediate, Mux_src, Mux_res);
 ALU_C: ALUcontrol port map(Control_op, Alu_op);
 ALU1: ALU port map(RD1, Mux_res, Alu_op, Alu_res, Alu_zero);
 
-	RD1 <= rs;
-	RD2 <= rt;
-	Immediate <= imm;
-	Mux_src <= src;
-	Control_op <= opcode;		
-	
-	mem_wdata <= RD2;
-	result <= Alu_res;
-	taken <= '1' when(branch = Alu_zero) else '0';
+	execution: process(clock)
+	begin
+		if rising_edge(clock) then
+			if (stall='1') then
+				RD1 <= (others => '0');
+				RD2 <= (others => '0');
+				Immediate <= (others => '0');
+				Control_op <= (others => '0');
+				Mux_src <= '0';
+				mem_wdata <= (others => '0');
+				result <= (others => '0');
+				taken <= '0';
+			else
+				RD1 <= rs;
+				RD2 <= rt;
+				Immediate <= imm;
+				Control_op <= opcode;
+				Mux_src <= src;
+				mem_wdata <= RD2;
+				result <= Alu_res;
+				taken <= '1' when(branch = Alu_zero) else '0';
+			end if;	
+		end if;
+	end process;
   
 end beh;
 
