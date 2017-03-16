@@ -127,7 +127,7 @@ architecture Pro_Arch of Processor is
    	destination_addr: in std_logic_vector (4 downto 0);
    	memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
    	alu_result_go: out std_logic_vector(31 downto 0); -- redult from ALU to be forwarded to WB
-   	writeback_addr: out std_logic_vector(4 downto 0);
+   	writeback_addr: out std_logic_vector(4 downto 0)
     );
   end component;
   

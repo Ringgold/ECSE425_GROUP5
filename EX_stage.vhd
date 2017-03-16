@@ -69,7 +69,7 @@ ALU1: ALU port map(RD1, Mux_res, Alu_op, Alu_res, Alu_zero);
 				Mux_src <= src;
 				mem_wdata <= RD2;
 				result <= Alu_res;
-				taken <= '1' when(branch = Alu_zero) else '0';
+				taken <= branch xnor Alu_zero;
 			end if;	
 		end if;
 	end process;

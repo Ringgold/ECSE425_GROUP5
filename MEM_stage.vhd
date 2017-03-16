@@ -17,38 +17,32 @@ entity MEM_stage is
     	memRead: in std_logic;
 
     	memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
-    	alu_result_go: out std_logic_vector(31 downto 0); -- redult from ALU to be forwarded to WB
+    	alu_result_go: out std_logic_vector(31 downto 0) -- redult from ALU to be forwarded to WB
 	);
 end MEM_stage;
 
 architecture beh of MEM_stage is
 	signal clk : std_logic;
-	signal wd : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
-	signal alu : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+	signal wd : STD_LOGIC_VECTOR (31 DOWNTO 0);
+	signal alu : INTEGER RANGE 0 TO ram_size-1;
+	signal const : INTEGER RANGE 0 TO ram_size-1:= 32;
 	signal mw : std_logic;
 	signal mr : std_logic;
-	signal rd : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+	signal rd : STD_LOGIC_VECTOR (31 DOWNTO 0);
   
   	component data_memory
     	port(
 	      	clock: IN STD_LOGIC;
 			writedata: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
-			address: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+			address: IN INTEGER RANGE 0 TO ram_size-1;
 			memwrite: IN STD_LOGIC;
 			memread: IN STD_LOGIC;
-			readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+			readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
     	);
   	end component;
   
 begin
-MEM1: data_memory port map(
-	clock: => clk, 
-	writedata: => wd, 
-	address: => alu, 
-	memwrite: => mw, 
-	memread: => mr, 
-	readdata: => rd
-	);
+MEM1: data_memory port map(clk, wd, alu, mw, mr, rd);
 
 For_DM : process
 begin
@@ -56,7 +50,7 @@ begin
     if rising_edge(clock) then
 
       	clk <= clock;
-      	alu <= (signed(alu_result))/32; --get word counted data memory address
+      	alu <= to_integer(unsigned(alu_result))/(const); --get word counted data memory address
 
       	--Set read and write signals
       	mr <= memRead;
@@ -71,14 +65,10 @@ Stage_process : process (clock)
 begin
   	if rising_edge(clock) then
   		if (stall='0') then
-		    alu_result <= alu_result_go;
+		    alu_result_go <= alu_result;
 		    memory_data <= rd;
 		end if;
     end if;
 end process;
 	
 end beh;
-
-      
-  
-  

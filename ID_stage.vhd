@@ -9,7 +9,7 @@ entity ID_stage is
     stall : out std_logic;
     instruction : in std_logic_vector(31 downto 0);     --instruction to decode
     pc_in : in integer;                                 --current pc
-    rd_in : in std_logic_vector(4 downto 0);          --destination register
+    rd_in : in std_logic_vector(4 downto 0);            --destination register
     write_data : in std_logic_vector(31 downto 0);      --data to write to rd
     write_en : in std_logic;                            --write enable
     opcode_out : out std_logic_vector(5 downto 0);      --opcode of current instruction
@@ -17,7 +17,14 @@ entity ID_stage is
     rt_out : out std_logic_vector(31 downto 0);         --data in rt register
     immediate_out : out std_logic_vector(31 downto 0);  --immediate value shifted appropriately
     address_out : out std_logic_vector(25 downto 0);    -- address for J instructions
-    pc_out : out integer                                --new pc
+    pc_out : out integer;                               --new pc
+
+    mem_read: out std_logic;
+    mem_write: out std_logic;
+    wb_src: out std_logic;
+    reg_dst: out std_logic;
+    alu_src: out std_logic;
+    branch: out std_logic
   );
 end ID_stage;
 
@@ -56,7 +63,12 @@ begin
   
   process(clock,rd_in,write_data)
     begin
-      
+        mem_read <= '0';
+        mem_write <= '0';
+        wb_src <= '0';
+        reg_dst <= '0';
+        alu_src <= '0';
+        branch <= '0';
       --write result to register during first half of cc
       if clock = '1' and write_en = '1' then
         reg_block(to_integer(unsigned(rd_in)))(31 downto 0) <= write_data;
@@ -74,14 +86,18 @@ begin
         else
           stall <= '0';
           registers_in_use(to_integer(unsigned(rd))) <= '1';
-          if instruction_format = "00" then  -- R instruction           
+          if instruction_format = "00" then  -- R instruction
+            reg_dst <= '1';
+            alu_src <= '1';
+            opcode_out <= funct;         
             if funct = "100000" or funct = "100010" or funct = "011000" or funct = "011010" or funct = "101010" or funct = "100100" or funct = "100101" or funct = "100111" or funct = "100110" then -- add sub mult div slt and or nor xor
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
             elsif funct = "010000" or funct = "010010" then  --MFHI MFLO
           
             elsif funct = "000000" or funct = "000010" or funct = "000011" then   --sll srl sra
-          
+              rs_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
+              rt_out <= reg_block(to_integer(unsigned(shamt)))(31 downto 0);
             else --jr
               rs_out <= (others => '0');
               rt_out <= (others => '0');    
@@ -100,22 +116,13 @@ begin
             end if;
           
           elsif instruction_format = "01" then  --I instruction
-            if opcode = "001000" then --addi
+            reg_dst <= '0';
+            alu_src <= '0';
+            opcode_out <= opcode;
+            if opcode = "001000" or opcode = "001100" or opcode = "001101" or opcode = "001010" or opcode = "001110" then --addi andi ori slti xori
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= (others => '0');
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
-            elsif opcode = "001100" then  --andi    
-              rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
-              rt_out <= (others => '0');
-              immediate_out <= std_logic_vector(resize(unsigned(immediate), 32));
-            elsif opcode = "001101" then  --ori
-              rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
-              rt_out <= (others => '0');
-              immediate_out <= std_logic_vector(resize(unsigned(immediate), 32));
-            elsif opcode = "001010" then  --slti
-              rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
-              rt_out <= (others => '0');
-              immediate_out <= std_logic_vector(resize(unsigned(immediate), 32));
             elsif opcode = "001111" then  --lui
               rs_out <= (others => '0');
               rt_out <= (others => '0');
@@ -123,20 +130,27 @@ begin
             elsif opcode = "000100" then  --beq
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
-          
+              alu_src <= '1';
+              branch <= '1';
             elsif opcode = "000101" then  --bne
-        
+              rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
+              rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
+              alu_src <= '1';
+              branch <= '0';
             elsif opcode = "100011" then  --LW
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
+              mem_read <= '1';
+              mem_write <= '0';
+              wb_src <= '1';
              -- pc_
             elsif opcode = "101011" then  --SW
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
-            elsif opcode = "001110" then    --XORI
-          
+              mem_read <= '0';
+              mem_write <= '1';
             end if;
           end if;         
         end if;

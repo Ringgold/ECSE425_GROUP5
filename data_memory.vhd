@@ -15,7 +15,7 @@ ENTITY data_memory IS
 		address: IN INTEGER RANGE 0 TO ram_size-1;
 		memwrite: IN STD_LOGIC;
 		memread: IN STD_LOGIC;
-		readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+		readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
 	);
 END data_memory;
 
