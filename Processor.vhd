@@ -26,6 +26,50 @@ architecture Pro_Arch of Processor is
   signal address: std_logic_vector(25 downto 0);
   signal stall: std_logic := '0';
   
+  
+  --REGISTER SIGNALS
+  signal IF_ID_Reg_input : std_logic_vector(31 downto 0);
+  signal IF_ID_Reg_enable : std_logic := '1';
+  signal IF_ID_Reg_output : std_logic_vector(31 downto 0);
+  
+  signal ID_EX_Reg_input : std_logic_vector(31 downto 0);
+  signal ID_EX_Reg_enable : std_logic;
+  signal ID_EX_Reg_output : std_logic_vector(31 downto 0);
+  
+  signal EX_MEM_Reg_input : std_logic_vector(31 downto 0);
+  signal EX_MEM_Reg_enable : std_logic;
+  signal EX_MEM_Reg_output : std_logic_vector(31 downto 0);
+  
+  signal MEM_WB_Reg_input : std_logic_vector(31 downto 0);
+  signal MEM_WB_Reg_enable : std_logic;
+  signal MEM_WB_Reg_output : std_logic_vector(31 downto 0);
+
+    
+  --ID SIGNALS
+  signal pc_in_id : integer;
+  signal rd_in_id : std_logic_vector(4 downto 0);  
+  signal write_data_id : std_logic_vector(31 downto 0);
+  signal write_en_id : std_logic := '0';
+  signal opcode_out_id : std_logic_vector(5 downto 0);
+  signal rs_out_id : std_logic_vector(31 downto 0);
+  signal rt_out_id : std_logic_vector(31 downto 0);
+  signal immediate_out_id : std_logic_vector(31 downto 0);
+  signal address_out_id : std_logic_vector(25 downto 0);
+  signal pc_out_id : integer;
+  
+  
+  component Reg
+    generic(
+      size : integer
+    );
+    port(
+      clock : in std_logic;
+      input : in std_logic_vector(size-1 downto 0);
+      enable : in std_logic;
+      output : out std_logic_vector(size-1 downto 0)
+    );
+  end component;
+  
   component IF_stage 
     port(
       clock : in std_logic;
@@ -39,19 +83,22 @@ architecture Pro_Arch of Processor is
   end component;
   
   component ID_stage
-    port(
-      clock : in std_logic;
-      reset : in std_logic;
-      instruction : in std_logic_vector(31 downto 0);
-      opcode : out std_logic_vector(5 downto 0);
-      rs : out std_logic_vector(4 downto 0);
-      rt : out std_logic_vector(4 downto 0);
-      rd : out std_logic_vector(4 downto 0);
-      shamt : out std_logic_vector(4 downto 0);
-      funct : out std_logic_vector(5 downto 0);
-      immediate : out std_logic_vector(15 downto 0);
-      address : out std_logic_vector(25 downto 0)
-    );
+   port(
+    clock : in std_logic;
+    reset : in std_logic;
+    stall : out std_logic;
+    instruction : in std_logic_vector(31 downto 0);     --instruction to decode
+    pc_in : in integer;                                 --current pc
+    rd_in : in std_logic_vector(4 downto 0);          --destination register
+    write_data : in std_logic_vector(31 downto 0);      --data to write to rd
+    write_en : in std_logic;                            --write enable
+    opcode_out : out std_logic_vector(5 downto 0);      --opcode of current instruction
+    rs_out : out std_logic_vector(31 downto 0);         --data in rs register
+    rt_out : out std_logic_vector(31 downto 0);         --data in rt register
+    immediate_out : out std_logic_vector(31 downto 0);  --immediate value shifted appropriately
+    address_out : out std_logic_vector(25 downto 0);    -- address for J instructions
+    pc_out : out integer                                --new pc
+  );
   end component;
   
   component EX_stage
@@ -77,6 +124,17 @@ architecture Pro_Arch of Processor is
   
 begin
   
+  IF_ID_Register : Reg
+  generic map(
+    size => 32
+  )
+  port map(
+    clock => clock,
+    input => input,
+    enable => IF_ID_Reg_enable,
+    output => IF_ID_Reg_output
+  );
+    
   instruction_fetch_stage : IF_stage
   port map(
     clock => clock,
@@ -88,6 +146,23 @@ begin
     pc => pc  
   );
   
+  instruction_decode_stage : ID_stage
+  port map(
+    clock => clock,
+    reset => reset,
+    stall => stall,
+    instruction => IF_ID_Reg_output,
+    pc_in => pc_in_id,
+    rd_in => rd_in_id,
+    write_data => write_data_id,
+    write_en => write_en_id,
+    opcode_out => opcode_out_id,
+    rs_out => rs_out_id,
+    rt_out => rt_out_id,
+    immediate_out => immediate_out_id,
+    address_out => address_out_id,
+    pc_out => pc_out_id
+  );
 end Pro_Arch;
 
       

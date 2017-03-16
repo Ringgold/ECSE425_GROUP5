@@ -56,7 +56,9 @@ begin
   
   process(clock,rd_in,write_data)
     begin
-      if clock = '1' then
+      
+      --write result to register during first half of cc
+      if clock = '1' and write_en = '1' then
         reg_block(to_integer(unsigned(rd_in)))(31 downto 0) <= write_data;
         registers_in_use(to_integer(unsigned(rd_in))) <= '0';
         write_done <= '1';
@@ -64,12 +66,13 @@ begin
         write_done <= '0';
       end if;
       
+      --decode instruction during second half of cc
       if falling_edge(clock) then
       if write_en = '0' or (write_en = '1' and write_done = '1') then  --If write is disabled or its enabled but we're done writing(in the first half of the cc) then we decode the instruction
-        test <= '1';
         if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
           stall <= '1';
         else
+          stall <= '0';
           registers_in_use(to_integer(unsigned(rd))) <= '1';
           if instruction_format = "00" then  -- R instruction           
             if funct = "100000" or funct = "100010" or funct = "011000" or funct = "011010" or funct = "101010" or funct = "100100" or funct = "100101" or funct = "100111" or funct = "100110" then -- add sub mult div slt and or nor xor
