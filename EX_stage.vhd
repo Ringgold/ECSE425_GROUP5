@@ -12,6 +12,11 @@ entity EX_stage is
 	opcode : in std_logic_vector(5 downto 0);
 	src : in std_logic;									-- src='1' when instru is R and branch; src='0' when instru is I except branch
 	branch: in std_logic;								-- branch='1' when "beq"; branch='0' when "bne"
+	destination_reg: in std_logic_vector(4 downto 0);
+	write_en: in std_logic;
+
+	destination_reg_go: out std_logic_vector(4 downto 0);
+	write_en_go: out std_logic;
 	mem_wdata : out std_logic_vector(31 downto 0);
 	result : out std_logic_vector(31 downto 0);
 	taken: out std_logic	
@@ -62,6 +67,8 @@ ALU1: ALU port map(RD1, Mux_res, Alu_op, Alu_res, Alu_zero);
 	begin
 		if rising_edge(clock) then
 			if (stall='0') then
+				destination_reg_go <= destination_reg;
+				write_en_go <= write_en;
 				RD1 <= rs;
 				RD2 <= rt;
 				Immediate <= imm;

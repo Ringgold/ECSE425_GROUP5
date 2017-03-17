@@ -9,6 +9,11 @@ entity WB_stage is
 	src: in std_logic;								-- if src='0', take read_data; elif src='1', take alu_result
 	read_data: in std_logic_vector(31 downto 0);
 	alu_result: in std_logic_vector(31 downto 0);
+	destination_reg: in std_logic_vector(4 downto 0);
+	write_en: in std_logic;
+
+	destination_reg_go: out std_logic_vector(4 downto 0);
+	write_en_go: out std_logic;
 	output : out std_logic_vector(31 downto 0)
   );
 end WB_stage;
@@ -38,6 +43,8 @@ MUX1: MUX port map(RD, Alu_res, Mux_src, Mux_res);
 				Alu_res <= alu_result;
 				Mux_src <= src;
 				output <= Mux_res;
+				destination_reg_go <= destination_reg;
+				write_en_go <= write_en;
 			end if;	
 		end if;
 	end process;

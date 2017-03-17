@@ -19,6 +19,8 @@ entity ID_stage is
     address_out : out std_logic_vector(25 downto 0);    -- address for J instructions
     pc_out : out integer;                               --new pc
 
+    destination_reg : out std_logic_vector(4 downto 0); --the destination to pass to WB_stage in order to make the WB work
+    write_en_go: out std_logic;
     mem_read: out std_logic;
     mem_write: out std_logic;
     wb_src: out std_logic;
@@ -69,6 +71,13 @@ begin
         reg_dst <= '0';
         alu_src <= '0';
         branch <= '0';
+
+        --initialize the WB value and WB address
+        IF(now < 1 ps)THEN
+          write_en_go <= '0';
+          destination_reg_go <=  "00000"; 
+        end if;
+
       --write result to register during first half of cc
       if clock = '1' and write_en = '1' then
         reg_block(to_integer(unsigned(rd_in)))(31 downto 0) <= write_data;
@@ -79,7 +88,7 @@ begin
       end if;
       
       --decode instruction during second half of cc
-      if falling_edge(clock) then
+    if falling_edge(clock) then
       if write_en = '0' or (write_en = '1' and write_done = '1') then  --If write is disabled or its enabled but we're done writing(in the first half of the cc) then we decode the instruction
         if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
           stall <= '1';
@@ -87,6 +96,11 @@ begin
           stall <= '0';
           registers_in_use(to_integer(unsigned(rd))) <= '1';
           if instruction_format = "00" then  -- R instruction
+
+            --2 values which are going to be passed to the later stages so that to get back
+            destination_reg <= rd;
+            write_en_go <= '1';
+
             reg_dst <= '1';
             alu_src <= '1';
             opcode_out <= funct;         
@@ -156,6 +170,7 @@ begin
         end if;
       end if;
     end if;
+    write_en <= '0'; --reset the write to reg after the whole action
   end process;
   
 

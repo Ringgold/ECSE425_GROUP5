@@ -15,7 +15,11 @@ entity MEM_stage is
     	alu_result: in std_logic_vector(31 downto 0); -- result from ALU
     	memWrite: in std_logic;
     	memRead: in std_logic;
+    	destination_red: in std_logic_vector(4 downto 0);
+    	write_en: in std_logic;
 
+    	destination_red_go: out std_logic_vector(4 downto 0);
+    	write_en_go: out std_logic;
     	memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
     	alu_result_go: out std_logic_vector(31 downto 0) -- redult from ALU to be forwarded to WB
 	);
@@ -67,6 +71,8 @@ begin
   		if (stall='0') then
 		    alu_result_go <= alu_result;
 		    memory_data <= rd;
+		    destination_red_go <= destination_red;
+		    write_en_go <= write_en;
 		end if;
     end if;
 end process;
