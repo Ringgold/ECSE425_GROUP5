@@ -14,9 +14,15 @@ entity EX_stage is
 	branch: in std_logic;								-- branch='1' when "beq"; branch='0' when "bne"
 	destination_reg: in std_logic_vector(4 downto 0);
 	write_en: in std_logic;
+    mem_read_in: in std_logic;
+    mem_write_in: in std_logic;
+    wb_src_in: in std_logic;
 
 	destination_reg_go: out std_logic_vector(4 downto 0);
 	write_en_go: out std_logic;
+    mem_read_out: out std_logic;
+    mem_write_out: out std_logic;
+    wb_src_out: out std_logic;
 	mem_wdata : out std_logic_vector(31 downto 0);
 	result : out std_logic_vector(31 downto 0);
 	taken: out std_logic	
@@ -67,8 +73,6 @@ ALU1: ALU port map(RD1, Mux_res, Alu_op, Alu_res, Alu_zero);
 	begin
 		if rising_edge(clock) then
 			if (stall='0') then
-				destination_reg_go <= destination_reg;
-				write_en_go <= write_en;
 				RD1 <= rs;
 				RD2 <= rt;
 				Immediate <= imm;
@@ -77,12 +81,17 @@ ALU1: ALU port map(RD1, Mux_res, Alu_op, Alu_res, Alu_zero);
 				mem_wdata <= RD2;
 				result <= Alu_res;
 				taken <= branch xnor Alu_zero;
-			end if;	
+                destination_reg_go <= destination_reg;
+                write_en_go <= write_en;
+                mem_read_out <= mem_read_in;
+                mem_write_out <= mem_write_in;
+                wb_src_out <= wb_src_in;
+			end if;
 		end if;
 	end process;
-  
+
 end beh;
 
-      
-  
-  
+
+
+
