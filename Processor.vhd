@@ -32,9 +32,9 @@ architecture Pro_Arch of Processor is
   signal IF_ID_Reg_enable : std_logic := '1';
   signal IF_ID_Reg_output : std_logic_vector(31 downto 0);
   
-  signal ID_EX_Reg_input : std_logic_vector(31 downto 0);
+  signal ID_EX_Reg_input : std_logic_vector(101 downto 0);
   signal ID_EX_Reg_enable : std_logic := '1';
-  signal ID_EX_Reg_output : std_logic_vector(31 downto 0);
+  signal ID_EX_Reg_output : std_logic_vector(101 downto 0);
   
   signal EX_MEM_Reg_input : std_logic_vector(31 downto 0);
   signal EX_MEM_Reg_enable : std_logic := '1';
@@ -56,6 +56,24 @@ architecture Pro_Arch of Processor is
   signal immediate_out_id : std_logic_vector(31 downto 0);
   signal address_out_id : std_logic_vector(25 downto 0);
   signal pc_out_id : integer;
+  signal instruction_in_id : std_logic_vector(31 downto 0);
+  signal alu_src_out_id : std_logic;
+  signal mem_read_out_id : std_logic;
+  signal mem_wrie_out_id : std_logic;
+  signal wb_src_out_id : std_logic;
+  signal branch_out_id : std_logic;
+  
+  --EX SIGNALS
+  signal rs_in_ex : std_logic_vector(31 downto 0);
+  signal rt_in_ex : std_logic_vector(31 downto 0);
+  signal immediate_in_ex : std_logic_vector(31 downto 0);
+  signal opcode_in_ex : std_logic_vector(5 downto 0);
+  signal alu_src_in_ex : std_logic;
+  signal branch_in_ex : std_logic;
+  signal mem_wrie_data_in_ex : std_logic_vector(31 downto 0);
+  signal result_out_ex : std_logic_vector(31 downto 0);
+  signal taken_out_ex : std_logic;
+  
   
   
   component Reg
@@ -97,7 +115,12 @@ architecture Pro_Arch of Processor is
     rt_out : out std_logic_vector(31 downto 0);         --data in rt register
     immediate_out : out std_logic_vector(31 downto 0);  --immediate value shifted appropriately
     address_out : out std_logic_vector(25 downto 0);    -- address for J instructions
-    pc_out : out integer                                --new pc
+    pc_out : out integer;                               --new pc
+    mem_read: out std_logic;
+    mem_write: out std_logic;
+    wb_src: out std_logic;
+    alu_src: out std_logic;
+    branch: out std_logic
   );
   end component;
   
@@ -159,14 +182,14 @@ begin
   )
   port map(
     clock => clock,
-    input => input,
+    input => IF_ID_Reg_input,
     enable => IF_ID_Reg_enable,
     output => IF_ID_Reg_output
   );
   
   ID_EX_Register : Reg
   generic map(
-    size => 32
+    size => 102
   )
   port map(
     clock => clock,
@@ -213,7 +236,7 @@ begin
     clock => clock,
     reset => reset,
     stall => stall,
-    instruction => IF_ID_Reg_output,
+    instruction => instruction_in_id,
     pc_in => pc_in_id,
     rd_in => rd_in_id,
     write_data => write_data_id,
@@ -223,47 +246,67 @@ begin
     rt_out => rt_out_id,
     immediate_out => immediate_out_id,
     address_out => address_out_id,
-    pc_out => pc_out_id
+    pc_out => pc_out_id, 
+    mem_read => mem_read_out_id,
+    mem_write => mem_wrie_out_id,
+    wb_src => wb_src_out_id,
+    alu_src => alu_src_out_id,
+    branch => branch_out_id
+    
   );
   
   execute_stage : EX_stage
   port map(
-    clock : in std_logic;
-	  stall: in std_logic;
-    rs : in std_logic_vector(31 downto 0);
-	  rt : in std_logic_vector(31 downto 0);
-	  imm : in std_logic_vector(31 downto 0);
-	  opcode : in std_logic_vector(5 downto 0);
-	  src : in std_logic;									-- src='1' when instru is R and branch; src='0' when instru is I except branch
-	  branch: in std_logic;								-- branch='1' when "beq"; branch='0' when "bne"
-	  mem_wdata : out std_logic_vector(31 downto 0);
-	  result : out std_logic_vector(31 downto 0);
-	  taken: out std_logic	
+    clock => clock,
+	  stall => stall,
+    rs => rs_in_ex,
+	  rt => rt_in_ex,
+	  imm => immediate_in_ex,
+	  opcode => opcode_in_ex,
+	  src => alu_src_in_ex,								-- src='1' when instru is R and branch; src='0' when instru is I except branch
+	  branch => branch_in_ex,								-- branch='1' when "beq"; branch='0' when "bne"
+	  mem_wdata => mem_wrie_data_in_ex,
+	  result => result_out_ex,
+	  taken => taken_out_ex
   );
   
-  memory_stage : MEM_stage
-  port map(
-  		clock : in std_logic;
+ -- memory_stage : MEM_stage
+ -- port map(
+  --		clock : in std_logic;
 		--rdy: in std_logic; -- indicates if the stall is over
-		opcode : in std_logic_vector(5 downto 0); --operation code
-		register_data: in std_logic_vector(31 downto 0); --RD2
-   	alu_result: in std_logic_vector(31 downto 0); -- redult from ALU
-   	destination_addr: in std_logic_vector (4 downto 0);
-   	memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
-   	alu_result_go: out std_logic_vector(31 downto 0); -- redult from ALU to be forwarded to WB
-   	writeback_addr: out std_logic_vector(4 downto 0);
-  );
+	--	opcode : in std_logic_vector(5 downto 0); --operation code
+	--	register_data: in std_logic_vector(31 downto 0); --RD2
+  -- 	alu_result: in std_logic_vector(31 downto 0); -- redult from ALU
+  -- 	destination_addr: in std_logic_vector (4 downto 0);
+  -- 	memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
+  -- 	alu_result_go: out std_logic_vector(31 downto 0); -- redult from ALU to be forwarded to WB
+ --  	writeback_addr: out std_logic_vector(4 downto 0);
+  --);
   
-  Write_back_stage : WB_stage
-  port map(
-    clk: in  std_logic;
-    memory_data: in std_logic_vector(31 downto 0);
-    alu_result: in std_logic_vector(31 downto 0);
-    opcode : in std_logic_vector(5 downto 0);
-    writeback_addr: in std_logic_vector(4 downto 0);
-    writeback_data: out std_logic_vector(31 downto 0);
-    writeback_addr_go: out std_logic_vector(4 downto 0) 
-  );
+ -- Write_back_stage : WB_stage
+  --port map(
+  --  clk: in  std_logic;
+  --  memory_data: in std_logic_vector(31 downto 0);
+  --  alu_result: in std_logic_vector(31 downto 0);
+ ---   opcode : in std_logic_vector(5 downto 0);
+ --   writeback_addr: in std_logic_vector(4 downto 0);
+ --   writeback_data: out std_logic_vector(31 downto 0);
+ --   writeback_addr_go: out std_logic_vector(4 downto 0) 
+ -- );
+  
+  IF_ID_Reg_input <= input;
+  instruction_in_id <= IF_ID_Reg_output;
+  
+      --102              32          32          32                  6                 
+  ID_EX_Reg_input <= rs_out_id & rt_out_id & immediate_out_id & opcode_out_id;
+  
+  rs_in_ex <= ID_EX_Reg_output(101 downto 70);
+  rt_in_ex <= ID_EX_Reg_output(69 downto 38);
+  immediate_in_ex <= ID_EX_Reg_output(37 downto 6);
+  opcode_in_ex <= ID_EX_Reg_output(5 downto 0);
+  alu_src_in_ex <= alu_src_out_id;
+  
+  
   
     
     

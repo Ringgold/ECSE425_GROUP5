@@ -19,7 +19,7 @@ entity ID_stage is
     address_out : out std_logic_vector(25 downto 0);    -- address for J instructions
     pc_out : out integer;                               --new pc
 
-    destination_reg : out std_logic_vector(4 downto 0); --the destination to pass to WB_stage in order to make the WB work
+    destination_reg_go : out std_logic_vector(4 downto 0); --the destination to pass to WB_stage in order to make the WB work
     write_en_go: out std_logic;
     mem_read: out std_logic;
     mem_write: out std_logic;
@@ -81,6 +81,7 @@ begin
         reg_block(to_integer(unsigned(rd_in)))(31 downto 0) <= write_data;
         registers_in_use(to_integer(unsigned(rd_in))) <= '0';
         write_done <= '1';
+        write_en_go <= '0';
       elsif falling_edge(clock) then
         write_done <= '0';
       end if;
@@ -96,7 +97,7 @@ begin
           if instruction_format = "00" then  -- R instruction
 
             --2 values which are going to be passed to the later stages so that to get back
-            destination_reg <= rd;
+            destination_reg_go <= rd;
             write_en_go <= '1';
 
             alu_src <= '1';
@@ -166,9 +167,7 @@ begin
         end if;
       end if;
     end if;
-    write_en <= '0'; --reset the write to reg after the whole action
   end process;
   
 
 end ID_arch;
-      
