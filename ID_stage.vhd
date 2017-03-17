@@ -24,7 +24,6 @@ entity ID_stage is
     mem_read: out std_logic;
     mem_write: out std_logic;
     wb_src: out std_logic;
-    reg_dst: out std_logic;
     alu_src: out std_logic;
     branch: out std_logic
   );
@@ -68,7 +67,6 @@ begin
         mem_read <= '0';
         mem_write <= '0';
         wb_src <= '0';
-        reg_dst <= '0';
         alu_src <= '0';
         branch <= '0';
 
@@ -101,7 +99,6 @@ begin
             destination_reg <= rd;
             write_en_go <= '1';
 
-            reg_dst <= '1';
             alu_src <= '1';
             opcode_out <= funct;         
             if funct = "100000" or funct = "100010" or funct = "011000" or funct = "011010" or funct = "101010" or funct = "100100" or funct = "100101" or funct = "100111" or funct = "100110" then -- add sub mult div slt and or nor xor
@@ -130,7 +127,6 @@ begin
             end if;
           
           elsif instruction_format = "01" then  --I instruction
-            reg_dst <= '0';
             alu_src <= '0';
             opcode_out <= opcode;
             if opcode = "001000" or opcode = "001100" or opcode = "001101" or opcode = "001010" or opcode = "001110" then --addi andi ori slti xori
