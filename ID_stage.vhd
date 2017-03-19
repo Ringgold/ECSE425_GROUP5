@@ -31,7 +31,7 @@ end ID_stage;
 
 architecture ID_arch of ID_stage is
   type registers is array (31 downto 0) of std_logic_vector(31 downto 0);
-  signal reg_block : registers := (1 => "00000000000000000000000000000010", 2 => "00000000000000000000000000000100", others =>(others=>'0'));
+  signal reg_block : registers := (others =>(others => '0')); --:= (1 => "00000000000000000000000000000010", 2 => "00000000000000000000000000000100", others =>(others=>'0'));
   signal registers_in_use : std_logic_vector(31 downto 0) := (others => '0');
   signal opcode : std_logic_vector(5 downto 0);
   signal rs : std_logic_vector(4 downto 0) := (others => '0');
@@ -88,14 +88,12 @@ begin
       
       --decode instruction during second half of cc
     if falling_edge(clock) then
-      if write_en = '0' or (write_en = '1' and write_done = '1') then  --If write is disabled or its enabled but we're done writing(in the first half of the cc) then we decode the instruction
+      --if write_en = '0' or (write_en = '1' and write_done = '1') then  --If write is disabled or its enabled but we're done writing(in the first half of the cc) then we decode the instruction
         if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
           --stall <= '1';
         else
           stall <= '0';
-          registers_in_use(to_integer(unsigned(rd))) <= '1';
           if instruction_format = "00" then  -- R instruction
-
             --2 values which are going to be passed to the later stages so that to get back
             destination_reg_go <= rd;
             write_en_go <= '1';
@@ -103,6 +101,7 @@ begin
             alu_src <= '1';
             opcode_out <= funct;         
             if funct = "100000" or funct = "100010" or funct = "011000" or funct = "011010" or funct = "101010" or funct = "100100" or funct = "100101" or funct = "100111" or funct = "100110" then -- add sub mult div slt and or nor xor
+              registers_in_use(to_integer(unsigned(rd))) <= '1';
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
               immediate_out <= (others => '0');
@@ -129,20 +128,22 @@ begin
             end if;
           
           elsif instruction_format = "01" then  --I instruction
-            
-            destination_reg_go <= rt;
-            write_en_go <= '1';
-            
             alu_src <= '0';
             opcode_out <= opcode;
             if opcode = "001000" or opcode = "001100" or opcode = "001101" or opcode = "001010" or opcode = "001110" then --addi andi ori slti xori
+              registers_in_use(to_integer(unsigned(rt))) <= '1';
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= (others => '0');
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
+              destination_reg_go <= rt;
+              write_en_go <= '1';
+              wb_src <= '1';
             elsif opcode = "001111" then  --lui
               rs_out <= (others => '0');
               rt_out <= (others => '0');
               immediate_out <= immediate & "0000000000000000"; 
+              destination_reg_go <= rt;
+              write_en_go <= '1';
             elsif opcode = "000100" then  --beq
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
@@ -154,22 +155,27 @@ begin
               alu_src <= '1';
               branch <= '0';
             elsif opcode = "100011" then  --LW
+              registers_in_use(to_integer(unsigned(rt))) <= '1';
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
               mem_read <= '1';
               mem_write <= '0';
               alu_src <= '0';
+              destination_reg_go <= rt;
+              write_en_go <= '1';
              -- pc_
             elsif opcode = "101011" then  --SW
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
+              rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
               mem_read <= '0';
               mem_write <= '1';
               alu_src <= '0';
+              write_en_go <= '0';
             end if;
           end if;         
         end if;
-      end if;
+      --end if;
     end if;
   end process;
   

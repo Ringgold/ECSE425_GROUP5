@@ -4,6 +4,9 @@ use ieee.numeric_std.all;
 use ieee.std_logic_textio.all;
 use std.textio.all;
 
+library modelsim_lib;
+use modelsim_lib.util.all;
+
 
 entity Processor_tb is
 end Processor_tb; 
@@ -42,23 +45,6 @@ architecture behavior of Processor_tb is
   	 );
 	end component;
 	
-	component D_Memory is
-    generic(
-		  ram_size : INTEGER := 8192;
-		  mem_delay : time := 0 ns;
-		  clock_period : time := 1 ns
-	  );
-    port(
-      clock: in STD_LOGIC;
-		  writedata: in STD_LOGIC_VECTOR (31 DOWNTO 0);
-		  address: in INTEGER RANGE 0 TO 8192;
-		  memwrite: in STD_LOGIC;
-		  memread: in STD_LOGIC;
-		  readdata: out STD_LOGIC_VECTOR (31 DOWNTO 0);
-		  waitrequest: OUT STD_LOGIC
-  	 );
-	end component;
-	
 	
 	constant clock_period : time := 1 ns;
 	signal clock : std_logic;
@@ -89,6 +75,11 @@ architecture behavior of Processor_tb is
 	
 	signal input1 : std_logic_vector(31 downto 0);
 	
+	type registers is array (31 downto 0) of std_logic_vector(31 downto 0);
+  signal reg_block : registers;
+  
+  TYPE MEM IS ARRAY(8191 downto 0) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
+	SIGNAL ram_block: MEM;
 	
 	
 	begin
@@ -105,17 +96,6 @@ architecture behavior of Processor_tb is
 	    initialization => initialization,
 	    address_initialization => address_initialization,
 	    writedata_initialization => writedata_initialization
-	  );
-	  
-	  data_memory: D_Memory
-	  port map(
-	    clock => clock,
-	    writedata => d_writedata,
-	    address => d_address,
-	    memwrite => d_memwrite,
-	    memread => d_memread,
-	    readdata => d_readdata,
-	    waitrequest => d_waitrequest
 	  );
 	  
 	  processor1: Processor
@@ -182,17 +162,40 @@ architecture behavior of Processor_tb is
     end process;   
     
 
-    --run_program : process
-     -- begin
-        --if start = '1' then
-          --i_memread <= processor_i_memread;
-          --i_memwrite <= processor_i_memwrite;
-          --i_address <= pc;
-          --wait until rising_edge(i_waitrequest);
-          --input <= i_readdata;
-      -- end if; 
-       -- wait for 1 ps;
-   -- end process; 
+    write_file : process
+      file out_file1: text;
+      file out_file2: text;
+      variable line_str: line;
+      variable data: std_logic_vector(31 downto 0);
+      variable reg_begin : integer := 0;
+      
+     begin
+        wait for 100 ns;
+        init_signal_spy("/processor1/instruction_decode_stage/reg_block","/reg_block",1);
+        file_open(out_file1, "register_file.txt", write_mode);        
+        while reg_begin < 32 loop
+          data := reg_block(reg_begin)(31 downto 0);
+          write(line_str, data);
+          writeline(out_file1, line_str);
+          reg_begin := reg_begin + 1;
+        end loop;
+        file_close(out_file1);
+        reg_begin := 0;
+        
+        wait for 10 ns;
+        
+        init_signal_spy("/processor1/memory_stage/MEM1/ram_block ","/ram_block",1);
+        file_open(out_file2, "memory.txt", write_mode);
+        while reg_begin < 8192 loop
+          data := ram_block(reg_begin)(31 downto 0);
+          write(line_str, data);
+          writeline(out_file2, line_str);
+          reg_begin := reg_begin + 1;
+        end loop;
+        file_close(out_file2);
+        reg_begin := 0;
+        
+    end process; 
        
  end behavior;
 	  

@@ -36,9 +36,9 @@ architecture Pro_Arch of Processor is
   signal ID_EX_Reg_enable : std_logic := '1';
   signal ID_EX_Reg_output : std_logic_vector(106 downto 0) := (others => '0');
   
-  signal EX_MEM_Reg_input : std_logic_vector(36 downto 0) := (others => '0');
+  signal EX_MEM_Reg_input : std_logic_vector(68 downto 0) := (others => '0');
   signal EX_MEM_Reg_enable : std_logic := '1';
-  signal EX_MEM_Reg_output : std_logic_vector(36 downto 0) := (others => '0');
+  signal EX_MEM_Reg_output : std_logic_vector(68 downto 0) := (others => '0');
   
   signal MEM_WB_Reg_input : std_logic_vector(68 downto 0) := (others => '0'); 
   signal MEM_WB_Reg_enable : std_logic := '1';
@@ -274,7 +274,7 @@ begin
   
   EX_MEM_Register : Reg
   generic map(
-    size => 37
+    size => 69
   )
   port map(
     clock => clock,
@@ -412,8 +412,9 @@ begin
   immediate_in_ex <= ID_EX_Reg_output(37 downto 6);
   opcode_in_ex <= ID_EX_Reg_output(5 downto 0);
   
-      --37               5                 	       32
-  EX_MEM_Reg_input <= destination_reg_out_ex & result_out_ex;
+      --69                 32                  5                 	       32
+  EX_MEM_Reg_input <= mem_wdata_out_ex & destination_reg_out_ex & result_out_ex;
+  register_data_in_mem <= EX_MEM_Reg_output(68 downto 37);
   destination_reg_in_mem <= EX_MEM_Reg_output(36 downto 32);
   alu_result_in_mem <= EX_MEM_Reg_output(31 downto 0);
   

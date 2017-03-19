@@ -63,8 +63,8 @@ Stage_process : process (clock)
 begin
   	if clock = '0' then
   		if (stall='0') then
+  		    wd <= register_data; 
 		    alu_result_go <= alu_result;
-		    
 		    destination_reg_go <= destination_reg;
 		    write_en_go <= write_en;
             wb_src_out <= wb_src_in;

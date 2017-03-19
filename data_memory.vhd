@@ -28,17 +28,17 @@ ARCHITECTURE rtl OF data_memory IS
 	SIGNAL read_waitreq_reg: STD_LOGIC := '1';
 BEGIN
 	
-	mem_process: PROCESS (clock)
+	mem_process: PROCESS (clock, writedata)
 	BEGIN
 		--initialize the data_memory value all to 0 at start
 		IF(now < 1 ps)THEN
 			For i in 0 to ram_size-1 LOOP
-				ram_block(i) <= std_logic_vector(to_unsigned(i,32));
+				ram_block(i) <= std_logic_vector(to_unsigned(0,32));
 			END LOOP;
 		end if;
 
 		--This is the actual synthesizable SRAM block
-		IF falling_edge(clock) THEN
+		IF clock = '0' THEN
 			address_int <= address;
 			IF (memwrite = '1') THEN
 				ram_block(address_int) <= writedata;
