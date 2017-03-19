@@ -66,6 +66,7 @@ architecture Pro_Arch of Processor is
   signal mem_write_out_id : std_logic;
   signal wb_src_out_id : std_logic;
   signal branch_out_id : std_logic;
+  signal jump_out_id : std_logic;
   signal destination_reg_go_out_id : std_logic_vector(4 downto 0);
   signal write_en_go_out_id : std_logic := '0';
   
@@ -169,7 +170,8 @@ architecture Pro_Arch of Processor is
     mem_write: out std_logic;
     wb_src: out std_logic;
     alu_src: out std_logic;
-    branch: out std_logic
+    branch: out std_logic;
+    jump: out std_logic
   );
   end component;
   
@@ -330,14 +332,15 @@ begin
     mem_write => mem_write_out_id,
     wb_src => wb_src_out_id,
     alu_src => alu_src_out_id,
-    branch => branch_out_id   
+    branch => branch_out_id,
+    jump => jump_out_id
   );
   
   execute_stage : EX_stage
   port map(
     clock => clock,
 	  stall => stall,
-    rs => rs_in_ex,
+      rs => rs_in_ex,
 	  rt => rt_in_ex,
 	  imm => immediate_in_ex,
 	  opcode => opcode_in_ex,
@@ -354,7 +357,7 @@ begin
 	  wb_src_in => wb_src_in_ex,
 	  destination_reg_go => destination_reg_out_ex,	  
 	  mem_read_out => mem_read_out_ex,
-    mem_write_out => mem_write_out_ex,    
+      mem_write_out => mem_write_out_ex,
 	  write_en_go => write_en_go_out_ex,
 	  wb_src_out => wb_src_out_ex,
 	  mem_wdata => mem_wdata_out_ex,
@@ -411,6 +414,7 @@ begin
   rt_in_ex <= ID_EX_Reg_output(69 downto 38);
   immediate_in_ex <= ID_EX_Reg_output(37 downto 6);
   opcode_in_ex <= ID_EX_Reg_output(5 downto 0);
+  jump_addr_in_ex <= address_out_id;
   
       --69                 32                  5                 	       32
   EX_MEM_Reg_input <= mem_wdata_out_ex & destination_reg_out_ex & result_out_ex;
@@ -434,6 +438,8 @@ begin
         --id to ex
         alu_src_in_ex <= alu_src_out_id;
         branch_in_ex <= branch_out_id;
+        pc_in_ex <= pc_out_id;
+        jump_in_ex <= jump_out_id;
         mem_read_in_ex <= mem_read_out_id;
         mem_write_in_ex <= mem_write_out_id;
         write_en_in_ex <= write_en_go_out_id;
