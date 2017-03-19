@@ -25,7 +25,8 @@ entity ID_stage is
     mem_write: out std_logic;
     wb_src: out std_logic;
     alu_src: out std_logic;
-    branch: out std_logic
+    branch: out std_logic;
+    jump: out std_logic
   );
 end ID_stage;
 
@@ -69,6 +70,7 @@ begin
         wb_src <= '0';
         alu_src <= '0';
         branch <= '0';
+        jump <= '0';
 
         --initialize the WB value and WB address
         --IF(now < 1 ps)THEN
@@ -117,6 +119,7 @@ begin
             end if;
         
           elsif instruction_format = "10" then  --J instruction
+            jump <= '1';
             if opcode = "000010" then --jump
               rs_out <= (others => '0');
               rt_out <= (others => '0'); 
