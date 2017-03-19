@@ -215,18 +215,24 @@ begin
         -- Linkage is the only special case
         if (EX_opcode = JAL) then
             EX_Ready_Stage <= EX;
+        elsif (EX_opcode = SW) then
+            EX_Ready_Stage <= MEM;
         else
             EX_Ready_Stage <= WB;
         end if;
 
         if (MEM_opcode = JAL) then
             MEM_Ready_Stage <= EX;
+        elsif (MEM_opcode = SW) then
+            MEM_Ready_Stage <= MEM;
         else
             MEM_Ready_Stage <= WB;
         end if;
 
         if (WB_opcode = JAL) then
             WB_Ready_Stage <= EX;
+        elsif (WB_opcode = SW) then
+            WB_Ready_Stage <= MEM;
         else
             WB_Ready_Stage <= WB;
         end if;
