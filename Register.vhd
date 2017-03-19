@@ -8,13 +8,13 @@ entity Reg is
   );
   port(
     clock : in std_logic;
-    input : in std_logic_vector(size-1 downto 0);
+    input : in std_logic_vector(size-1 downto 0) := (others => '0');
     enable : in std_logic;
-    output : out std_logic_vector(size-1 downto 0)
+    output : out std_logic_vector(size-1 downto 0) := (others => '0')
   );
 end Reg;
 architecture Behavior of Reg is
-  signal data : std_logic_vector(size-1 downto 0);
+  signal data : std_logic_vector(size-1 downto 0) := (others => '0');
   
 begin
   

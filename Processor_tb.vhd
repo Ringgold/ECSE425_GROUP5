@@ -63,7 +63,7 @@ architecture behavior of Processor_tb is
 	constant clock_period : time := 1 ns;
 	signal clock : std_logic;
 	signal reset : std_logic;
-	signal input : std_logic_vector(31 downto 0);
+	signal input : std_logic_vector(31 downto 0) := (others => '0');
 	signal pc : integer;
 	signal program_transfered : std_logic := '0';
 	signal processor_i_memread : std_logic;
@@ -173,10 +173,10 @@ architecture behavior of Processor_tb is
           initialization <= '0';
           file_close(in_file);
         elsif program_transfered = '1' then
+          input <= i_readdata;
           i_memread <= processor_i_memread;
           i_memwrite <= processor_i_memwrite;
-          i_address <= pc;
-          input <= i_readdata;
+          i_address <= pc+1;         
         end if;       
        wait for 1 ps;
     end process;   

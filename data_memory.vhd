@@ -33,12 +33,12 @@ BEGIN
 		--initialize the data_memory value all to 0 at start
 		IF(now < 1 ps)THEN
 			For i in 0 to ram_size-1 LOOP
-				ram_block(i) <= std_logic_vector(to_unsigned(0,32));
+				ram_block(i) <= std_logic_vector(to_unsigned(i,32));
 			END LOOP;
 		end if;
 
 		--This is the actual synthesizable SRAM block
-		IF rising_edge(clock) THEN
+		IF falling_edge(clock) THEN
 			address_int <= address;
 			IF (memwrite = '1') THEN
 				ram_block(address_int) <= writedata;
@@ -46,7 +46,7 @@ BEGIN
 		read_address_reg <= address_int;
 		END IF;
 	END PROCESS;
-	readdata <= ram_block(read_address_reg);
+	readdata <= ram_block(address_int);
 
 
 END rtl;

@@ -11,19 +11,19 @@ entity MEM_stage is
 	port(
 		clock : in std_logic;
 		stall: in std_logic; -- indicates if the stall is over
-		register_data: in std_logic_vector(31 downto 0); --RD2
-    	alu_result: in std_logic_vector(31 downto 0); -- result from ALU
-    	memWrite: in std_logic;
-    	memRead: in std_logic;
-    	destination_red: in std_logic_vector(4 downto 0);
-    	write_en: in std_logic;
-        wb_src_in: in std_logic;
+		register_data: in std_logic_vector(31 downto 0) := (others => '0'); --RD2
+   	alu_result: in std_logic_vector(31 downto 0) := (others => '0'); -- result from ALU
+   	memWrite: in std_logic;
+ 	  memRead: in std_logic;
+   	destination_reg: in std_logic_vector(4 downto 0);
+   	write_en: in std_logic;
+    wb_src_in: in std_logic;
 
-    	destination_red_go: out std_logic_vector(4 downto 0);
-    	write_en_go: out std_logic;
-        wb_src_out: out std_logic;
-    	memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
-    	alu_result_go: out std_logic_vector(31 downto 0) -- redult from ALU to be forwarded to WB
+   	destination_reg_go: out std_logic_vector(4 downto 0) := (others => '0');
+   	write_en_go: out std_logic := '0';
+    wb_src_out: out std_logic;
+   	memory_data: out std_logic_vector(31 downto 0) := (others => '0'); --passed from memory to WB
+   	alu_result_go: out std_logic_vector(31 downto 0) := (others => '0') -- redult from ALU to be forwarded to WB
 	);
 end MEM_stage;
 
@@ -48,36 +48,28 @@ architecture beh of MEM_stage is
   	end component;
   
 begin
-MEM1: data_memory port map(clk, wd, alu, mw, mr, rd);
+MEM1: data_memory port map(clock, wd, alu, mw, mr, rd);
 
-For_DM : process
-begin
 
-    if rising_edge(clock) then
 
-      	clk <= clock;
-      	alu <= to_integer(unsigned(alu_result))/(const); --get word counted data memory address
+      	alu <= to_integer(unsigned(alu_result)); --/(const); --get word counted data memory address
 
       	--Set read and write signals
       	mr <= memRead;
       	mw <= memWrite;
 
-    end if;
-
-end process;
-
 
 Stage_process : process (clock)
 begin
-  	if rising_edge(clock) then
+  	if clock = '0' then
   		if (stall='0') then
 		    alu_result_go <= alu_result;
-		    memory_data <= rd;
-		    destination_red_go <= destination_red;
+		    
+		    destination_reg_go <= destination_reg;
 		    write_en_go <= write_en;
             wb_src_out <= wb_src_in;
 		end if;
     end if;
 end process;
-	
+memory_data <= rd;	
 end beh;

@@ -7,20 +7,20 @@ entity ID_stage is
     clock : in std_logic;
     reset : in std_logic;
     stall : out std_logic;
-    instruction : in std_logic_vector(31 downto 0);     --instruction to decode
-    pc_in : in integer;                                 --current pc
-    rd_in : in std_logic_vector(4 downto 0);            --destination register
-    write_data : in std_logic_vector(31 downto 0);      --data to write to rd
-    write_en : in std_logic;                            --write enable
-    opcode_out : out std_logic_vector(5 downto 0);      --opcode of current instruction
-    rs_out : out std_logic_vector(31 downto 0);         --data in rs register
-    rt_out : out std_logic_vector(31 downto 0);         --data in rt register
-    immediate_out : out std_logic_vector(31 downto 0);  --immediate value shifted appropriately
-    address_out : out std_logic_vector(25 downto 0);    -- address for J instructions
-    pc_out : out integer;                               --new pc
+    instruction : in std_logic_vector(31 downto 0) := (others => '0');     --instruction to decode
+    pc_in : in integer;                                                   --current pc
+    rd_in : in std_logic_vector(4 downto 0);                                --destination register
+    write_data : in std_logic_vector(31 downto 0);                          --data to write to rd
+    write_en : in std_logic;                                                --write enable
+    opcode_out : out std_logic_vector(5 downto 0);                        --opcode of current instruction
+    rs_out : out std_logic_vector(31 downto 0) := (others => '0');         --data in rs register
+    rt_out : out std_logic_vector(31 downto 0) := (others => '0');         --data in rt register
+    immediate_out : out std_logic_vector(31 downto 0);                    --immediate value shifted appropriately
+    address_out : out std_logic_vector(25 downto 0);                      -- address for J instructions
+    pc_out : out integer;                                                 --new pc
 
     destination_reg_go : out std_logic_vector(4 downto 0); --the destination to pass to WB_stage in order to make the WB work
-    write_en_go: out std_logic;
+    write_en_go: out std_logic := '0';
     mem_read: out std_logic;
     mem_write: out std_logic;
     wb_src: out std_logic;
@@ -31,11 +31,11 @@ end ID_stage;
 
 architecture ID_arch of ID_stage is
   type registers is array (31 downto 0) of std_logic_vector(31 downto 0);
-  signal reg_block : registers := (others =>(others=>'0'));
+  signal reg_block : registers := (1 => "00000000000000000000000000000010", 2 => "00000000000000000000000000000100", others =>(others=>'0'));
   signal registers_in_use : std_logic_vector(31 downto 0) := (others => '0');
   signal opcode : std_logic_vector(5 downto 0);
-  signal rs : std_logic_vector(4 downto 0);
-  signal rt : std_logic_vector(4 downto 0);
+  signal rs : std_logic_vector(4 downto 0) := (others => '0');
+  signal rt : std_logic_vector(4 downto 0) := (others => '0');
   signal rd : std_logic_vector(4 downto 0);
   signal shamt : std_logic_vector(4 downto 0);
   signal funct : std_logic_vector(5 downto 0);
@@ -71,10 +71,10 @@ begin
         branch <= '0';
 
         --initialize the WB value and WB address
-        IF(now < 1 ps)THEN
-          write_en_go <= '0';
-          destination_reg_go <=  "00000"; 
-        end if;
+        --IF(now < 1 ps)THEN
+        --  write_en_go <= '0';
+        --  destination_reg_go <=  "00000"; 
+        --end if;
 
       --write result to register during first half of cc
       if clock = '1' and write_en = '1' then
@@ -90,7 +90,7 @@ begin
     if falling_edge(clock) then
       if write_en = '0' or (write_en = '1' and write_done = '1') then  --If write is disabled or its enabled but we're done writing(in the first half of the cc) then we decode the instruction
         if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
-          stall <= '1';
+          --stall <= '1';
         else
           stall <= '0';
           registers_in_use(to_integer(unsigned(rd))) <= '1';
@@ -105,6 +105,7 @@ begin
             if funct = "100000" or funct = "100010" or funct = "011000" or funct = "011010" or funct = "101010" or funct = "100100" or funct = "100101" or funct = "100111" or funct = "100110" then -- add sub mult div slt and or nor xor
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
+              immediate_out <= (others => '0');
             elsif funct = "010000" or funct = "010010" then  --MFHI MFLO
           
             elsif funct = "000000" or funct = "000010" or funct = "000011" then   --sll srl sra
@@ -128,6 +129,10 @@ begin
             end if;
           
           elsif instruction_format = "01" then  --I instruction
+            
+            destination_reg_go <= rt;
+            write_en_go <= '1';
+            
             alu_src <= '0';
             opcode_out <= opcode;
             if opcode = "001000" or opcode = "001100" or opcode = "001101" or opcode = "001010" or opcode = "001110" then --addi andi ori slti xori
@@ -150,18 +155,17 @@ begin
               branch <= '0';
             elsif opcode = "100011" then  --LW
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
-              rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
               mem_read <= '1';
               mem_write <= '0';
-              wb_src <= '1';
+              alu_src <= '0';
              -- pc_
             elsif opcode = "101011" then  --SW
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
-              rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
               mem_read <= '0';
               mem_write <= '1';
+              alu_src <= '0';
             end if;
           end if;         
         end if;

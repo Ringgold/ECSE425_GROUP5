@@ -17,18 +17,18 @@ entity EX_stage is
     jump_addr: in std_logic_vector(25 downto 0);
 
 	  destination_reg: in std_logic_vector(4 downto 0);
-	  write_en: in std_logic;
+	  write_en: in std_logic := '0';
     mem_read_in: in std_logic;
     mem_write_in: in std_logic;
     wb_src_in: in std_logic;
 	  destination_reg_go: out std_logic_vector(4 downto 0);
-	  write_en_go: out std_logic;
+	  write_en_go: out std_logic := '0';
     mem_read_out: out std_logic;
     mem_write_out: out std_logic;
     wb_src_out: out std_logic;
 
 	  mem_wdata : out std_logic_vector(31 downto 0);
-	  result : out std_logic_vector(31 downto 0);
+	  result : out std_logic_vector(31 downto 0) := (others => '0');
     taken: out std_logic;
     branch_addr: out integer
   );
@@ -79,30 +79,30 @@ architecture beh of EX_stage is
   end component;
   
 begin
-MUX1: MUX port map(RD2, Immediate, Mux1_src, Mux1_res);
+MUX1: MUX port map(Immediate, RD2, Mux1_src, Mux1_res);
 ALU_C: ALUcontrol port map(Control_op, Alu_op);
 ALU1: ALU port map(RD1, Mux1_res, Alu_op, Alu_res, Alu_zero);
 MUX2: MUX port map(PC, Imm_add, Mux2_src, Mux2_res);
 MUX3: MUX port map(Mux2_res, J_addr, Mux3_src, B_addr);
 
+
+	RD1 <= rs;
+	RD2 <= rt;
+	Immediate <= imm;
+	Control_op <= opcode;
+	Mux1_src <= src;
+  Branch_taken <= branch xnor Alu_zero;
+  -- branch logic
+  PC <= std_logic_vector(to_unsigned(pc_in, 32));
+  Imm_add <= std_logic_vector(signed(PC)+signed(std_logic_vector(shift_left(signed(Immediate), 2))));
+  J_addr <= PC(31 downto 28) & jump_addr & "00";
+  Mux2_src <= Branch_taken;
+  Mux3_src <= jump;
+        
 	execution: process(clock)
 	begin
-	  if (stall='0') then
-      if rising_edge(clock) then
-				RD1 <= rs;
-				RD2 <= rt;
-				Immediate <= imm;
-				Control_op <= opcode;
-				Mux1_src <= src;
-        Branch_taken <= branch xnor Alu_zero;
-
-        -- branch logic
-        PC <= std_logic_vector(to_unsigned(pc_in, 32));
-        Imm_add <= std_logic_vector(signed(PC)+signed(std_logic_vector(shift_left(signed(Immediate), 2))));
-        J_addr <= PC(31 downto 28) & jump_addr & "00";
-        Mux2_src <= Branch_taken;
-        Mux3_src <= jump;
-      elsif falling_edge(clock) then
+	  if (stall='0') then			
+     if falling_edge(clock) then
         -- output
         mem_wdata <= RD2;
         result <= Alu_res;
