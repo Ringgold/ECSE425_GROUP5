@@ -6,6 +6,7 @@ entity ID_stage is
   port(
     clock : in std_logic;
     reset : in std_logic;
+    stall_H : in std_logic;
     stall : out std_logic;
     instruction : in std_logic_vector(31 downto 0) := (others => '0');     --instruction to decode
     pc_in : in integer;                                                   --current pc
@@ -19,6 +20,7 @@ entity ID_stage is
     address_out : out std_logic_vector(25 downto 0);                      -- address for J instructions
     pc_out : out integer;                                                 --new pc
 
+    code : out std_logic_vector(31 downto 0); -- instruction needed to be forwarded
     destination_reg_go : out std_logic_vector(4 downto 0); --the destination to pass to WB_stage in order to make the WB work
     write_en_go: out std_logic := '0';
     mem_read: out std_logic;
@@ -71,7 +73,7 @@ begin
         alu_src <= '0';
         branch <= '0';
         jump <= '0';
-
+        address_out <= address;
         --initialize the WB value and WB address
         --IF(now < 1 ps)THEN
         --  write_en_go <= '0';
@@ -91,10 +93,20 @@ begin
       --decode instruction during second half of cc
     if falling_edge(clock) then
       --if write_en = '0' or (write_en = '1' and write_done = '1') then  --If write is disabled or its enabled but we're done writing(in the first half of the cc) then we decode the instruction
-        if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
+        --if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
           --stall <= '1';
+        if stall_H = '1' then
+          code <= "000000000000000000000100000";        
+          alu_src <= '1';
+          opcode_out <= "100000";     
+          rs_out <= (others => '0'); 
+          rt_out <= (others => '0'); 
+          immediate_out <= (others => '0');
+          branch <= '0';
+          pc_out <= to_integer(unsigned(address))/4;
         else
           stall <= '0';
+          code <= instruction;
           if instruction_format = "00" then  -- R instruction
             --2 values which are going to be passed to the later stages so that to get back
             destination_reg_go <= rd;
@@ -103,7 +115,7 @@ begin
             alu_src <= '1';
             opcode_out <= funct;         
             if funct = "100000" or funct = "100010" or funct = "011000" or funct = "011010" or funct = "101010" or funct = "100100" or funct = "100101" or funct = "100111" or funct = "100110" then -- add sub mult div slt and or nor xor
-              registers_in_use(to_integer(unsigned(rd))) <= '1';
+              --registers_in_use(to_integer(unsigned(rd))) <= '1';
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= reg_block(to_integer(unsigned(rt)))(31 downto 0);
               immediate_out <= (others => '0');
@@ -134,7 +146,7 @@ begin
             alu_src <= '0';
             opcode_out <= opcode;
             if opcode = "001000" or opcode = "001100" or opcode = "001101" or opcode = "001010" or opcode = "001110" then --addi andi ori slti xori
-              registers_in_use(to_integer(unsigned(rt))) <= '1';
+              --registers_in_use(to_integer(unsigned(rt))) <= '1';
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               rt_out <= (others => '0');
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
@@ -158,7 +170,7 @@ begin
               alu_src <= '1';
               branch <= '0';
             elsif opcode = "100011" then  --LW
-              registers_in_use(to_integer(unsigned(rt))) <= '1';
+              --registers_in_use(to_integer(unsigned(rt))) <= '1';
               rs_out <= reg_block(to_integer(unsigned(rs)))(31 downto 0);
               immediate_out <= std_logic_vector(resize(signed(immediate), 32));
               mem_read <= '1';

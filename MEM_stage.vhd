@@ -19,6 +19,9 @@ entity MEM_stage is
    	write_en: in std_logic;
     wb_src_in: in std_logic;
 
+    code    : in std_logic_vector(31 downto 0);
+    code_go : out std_logic_vector(31 downto 0);
+
    	destination_reg_go: out std_logic_vector(4 downto 0) := (others => '0');
    	write_en_go: out std_logic := '0';
     wb_src_out: out std_logic;
@@ -63,6 +66,7 @@ Stage_process : process (clock)
 begin
   	if clock = '0' then
   		if (stall='0') then
+  			code_go <= code;
   		    wd <= register_data; 
 		    alu_result_go <= alu_result;
 		    destination_reg_go <= destination_reg;
