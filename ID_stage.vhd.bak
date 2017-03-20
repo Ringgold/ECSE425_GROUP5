@@ -95,7 +95,7 @@ begin
       --if write_en = '0' or (write_en = '1' and write_done = '1') then  --If write is disabled or its enabled but we're done writing(in the first half of the cc) then we decode the instruction
         --if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
           --stall <= '1';
-        if stall_H = '1' then
+        if '1' = '1' then
           code_go <= "00000000000000000000000000100000";        
           alu_src <= '1';
           opcode_out <= "100000";     
@@ -113,7 +113,6 @@ begin
             write_en_go <= '1';
 
             alu_src <= '1';
-            wb_src <= '1';
             opcode_out <= funct;         
             if funct = "100000" or funct = "100010" or funct = "011000" or funct = "011010" or funct = "101010" or funct = "100100" or funct = "100101" or funct = "100111" or funct = "100110" then -- add sub mult div slt and or nor xor
               --registers_in_use(to_integer(unsigned(rd))) <= '1';

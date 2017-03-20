@@ -27,7 +27,7 @@ begin
       program_counter <= 0;
     else
       if start = '1' then 
-        if rising_edge(clock) and stall = '0' then
+        if rising_edge(clock) then
           i_memread <= '1';
           i_memwrite <= '0';
           if branch = '1' then

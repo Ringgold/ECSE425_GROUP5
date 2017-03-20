@@ -9,7 +9,7 @@ use ieee.numeric_std.all;
 entity hazard_detecting_unit is
     GENERIC(
         -- Stage Listing
-        IF   : integer := 1;
+        IFF   : integer := 1;
         ID   : integer := 2;
         EX   : integer := 3;
         MEM  : integer := 4;
@@ -19,19 +19,19 @@ entity hazard_detecting_unit is
         R_TYPE : std_logic_vector(5 downto 0) := "000000";
 
         -- R Type Function Codes
-        ADD  : std_logic_vector(5 downto 0) := "100000";
-        SUB  : std_logic_vector(5 downto 0) := "100010";
+        --ADD  : std_logic_vector(5 downto 0) := "100000";
+        --SUB  : std_logic_vector(5 downto 0) := "100010";
         MULT : std_logic_vector(5 downto 0) := "011000";
         DIV  : std_logic_vector(5 downto 0) := "011010";  
-        AND  : std_logic_vector(5 downto 0) := "100100";
-        OR   : std_logic_vector(5 downto 0) := "100101";
-        NOR  : std_logic_vector(5 downto 0) := "100111";
-        XOR  : std_logic_vector(5 downto 0) := "100110";
+        --AND  : std_logic_vector(5 downto 0) := "100100";
+        --OR   : std_logic_vector(5 downto 0) := "100101";
+        --NOR  : std_logic_vector(5 downto 0) := "100111";
+        --XOR  : std_logic_vector(5 downto 0) := "100110";
         MFHI : std_logic_vector(5 downto 0) := "010000";
         MFLO : std_logic_vector(5 downto 0) := "010010";
-        SLL  : std_logic_vector(5 downto 0) := "000000";
-        SRL  : std_logic_vector(5 downto 0) := "000010";
-        SRA  : std_logic_vector(5 downto 0) := "000011";
+        SSLL  : std_logic_vector(5 downto 0) := "000000";
+        SSRL  : std_logic_vector(5 downto 0) := "000010";
+        SSRA  : std_logic_vector(5 downto 0) := "000011";
         SLT  : std_logic_vector(5 downto 0) := "101010";
         JR   : std_logic_vector(5 downto 0) := "001000"; -- Special
 
@@ -57,7 +57,8 @@ entity hazard_detecting_unit is
          EX_Code  : in  std_logic_vector(31 downto 0);
          MEM_Code : in  std_logic_vector(31 downto 0);
          WB_Code  : in  std_logic_vector(31 downto 0);
-         stall    : out std_logic);
+         stall    : out std_logic := '0'
+	);
 end hazard_detecting_unit;
 
 architecture behav of hazard_detecting_unit is
@@ -139,7 +140,7 @@ begin
             elsif (ID_funct = JR) then
                 RD1 <= ID_rs;
                 RD2 <= "00000";
-            elsif (ID_funct = SLL or ID_funct = SRA or ID_funct = SRL) then
+            elsif (ID_funct = SSLL or ID_funct = SSRA or ID_funct = SSRL) then
                 RD1 <= "00000";
                 RD2 <= ID_rt;
             -- Normal R type just do calculations
