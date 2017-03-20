@@ -47,22 +47,30 @@ architecture ID_arch of ID_stage is
   signal instruction_format : std_logic_vector(1 downto 0); -- 00=r  01=i  10=j
   signal write_done : std_logic := '0';
   signal test : std_logic:='0';
+
+  -- Instruction Buffers for Stall detection
+  signal buffer1 : std_logic_vector(31 downto 0) := "00000000000000000000000000100000"; 
+  signal buffer2 : std_logic_vector(31 downto 0) := "00000000000000000000000000100000"; 
+  signal buffer3 : std_logic_vector(31 downto 0) := "00000000000000000000000000100000";
+  signal buffer4 : std_logic_vector(31 downto 0) := "00000000000000000000000000100000";
+  signal buffer5 : std_logic_vector(31 downto 0) := "00000000000000000000000000100000";
+  signal buffer6 : std_logic_vector(31 downto 0) := "00000000000000000000000000100000";
+  signal buffer7 : std_logic_vector(31 downto 0) := "00000000000000000000000000100000";
   
 begin
   
   
-  
-  opcode <= instruction(31 downto 26);
+  opcode <= buffer2(31 downto 26);
   instruction_format <= "00" when opcode = "000000" else
                         "10" when (opcode = "000010") or (opcode = "000011") else
                         "01";
-  funct <= instruction(5 downto 0) when instruction_format = "00";
-  rs <= instruction(25 downto 21);
-  rt <= instruction(20 downto 16);
-  rd <= instruction(15 downto 11);
-  shamt <= instruction(10 downto 6);
-  immediate <= instruction(15 downto 0);
-  address <= instruction(25 downto 0);
+  funct <= buffer2(5 downto 0) when instruction_format = "00";
+  rs <= buffer2(25 downto 21);
+  rt <= buffer2(20 downto 16);
+  rd <= buffer2(15 downto 11);
+  shamt <= buffer2(10 downto 6);
+  immediate <= buffer2(15 downto 0);
+  address <= buffer2(25 downto 0);
 
   
   process(clock,rd_in,write_data)
@@ -105,6 +113,14 @@ begin
           branch <= '0';
           pc_out <= to_integer(unsigned(address))/4;
         else
+                  -- Instruction Holding Buffers
+          buffer7 <= buffer6;
+          buffer6 <= buffer5;
+          buffer5 <= buffer4;
+          buffer4 <= buffer3;
+          buffer3 <= buffer2;
+          buffer2 <= buffer1;
+          buffer1 <= instruction;
           stall <= '0';
           code_go <= instruction;
           if instruction_format = "00" then  -- R instruction
