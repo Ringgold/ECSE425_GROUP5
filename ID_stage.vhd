@@ -20,7 +20,7 @@ entity ID_stage is
     address_out : out std_logic_vector(25 downto 0);                      -- address for J instructions
     pc_out : out integer;                                                 --new pc
 
-    code : out std_logic_vector(31 downto 0); -- instruction needed to be forwarded
+    code_go : out std_logic_vector(31 downto 0); -- instruction needed to be forwarded
     destination_reg_go : out std_logic_vector(4 downto 0); --the destination to pass to WB_stage in order to make the WB work
     write_en_go: out std_logic := '0';
     mem_read: out std_logic;
@@ -96,7 +96,7 @@ begin
         --if registers_in_use(to_integer(unsigned(rs))) = '1' or registers_in_use(to_integer(unsigned(rt))) = '1' then --if we're trying to access data from a register that is in use
           --stall <= '1';
         if stall_H = '1' then
-          code <= "000000000000000000000100000";        
+          code_go <= "000000000000000000000100000";        
           alu_src <= '1';
           opcode_out <= "100000";     
           rs_out <= (others => '0'); 
@@ -106,7 +106,7 @@ begin
           pc_out <= to_integer(unsigned(address))/4;
         else
           stall <= '0';
-          code <= instruction;
+          code_go <= instruction;
           if instruction_format = "00" then  -- R instruction
             --2 values which are going to be passed to the later stages so that to get back
             destination_reg_go <= rd;
