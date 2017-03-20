@@ -359,6 +359,7 @@ begin
     address_out => address_out_id,
     pc_out => pc_out_id, 
     
+    code_go => code_go_out_id,
     destination_reg_go => destination_reg_go_out_id,
     write_en_go => write_en_go_out_id,
     mem_read => mem_read_out_id,

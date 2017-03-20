@@ -123,7 +123,7 @@ begin
         stall <= '0';
 
         -- Analyze the current code in ID stage so that we know what we need to wait for and how long we need to wait
-
+    --if (ID_opcode'event) then
         -- Decode and save values
         ID_opcode <= ID_Code(31 downto 26);
         ID_rs     <= ID_Code(25 downto 21);
@@ -186,6 +186,7 @@ begin
             RD1_Use_Stage <= EX;
             RD2_Use_Stage <= EX;
         end if;
+        
         -- At this momment we acquired info about the Registers we are going to use and corresponding stage we are going to use them
         -- which are RD1, RD2, RD1_Use_Stage, RD2_Use_Stage
 
@@ -311,31 +312,32 @@ begin
         -- EX stage
         if (EX_Output /= "00000") then
             if (EX_Output = RD1 and EX_Output_Need > RD1_Pending_Stall) then
-                stall <= '0';
+                stall <= '1';
             end if;
             if (EX_Output = RD2 and EX_Output_Need > RD2_Pending_Stall) then
-                stall <= '0';
+                stall <= '1';
             end if;
         end if;
 
         -- MEM stage
         if (MEM_Output /= "00000") then
             if (MEM_Output = RD1 and MEM_Output_Need > RD1_Pending_Stall) then
-                stall <= '0';
+                stall <= '1';
             end if;
             if (MEM_Output = RD2 and MEM_Output_Need > RD2_Pending_Stall) then
-                stall <= '0';
+                stall <= '1';
             end if;
         end if;
 
         -- WB Stage
         if (WB_Output /= "00000") then
             if (WB_Output = RD1 and WB_Output_Need > RD1_Pending_Stall) then
-                stall <= '0';
+                stall <= '1';
             end if;
             if (WB_Output = RD2 and WB_Output_Need > RD2_Pending_Stall) then
-                stall <= '0';
+                stall <= '1';
             end if;
         end if;
+    --end if;
     end process;
 end architecture behav;
