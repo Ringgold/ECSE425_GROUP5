@@ -12,11 +12,9 @@ entity EX_stage is
 	  opcode : in std_logic_vector(5 downto 0);
 	  src : in std_logic;									-- src='1' when instru is R and branch; src='0' when instru is I except branch
 	  branch: in std_logic;								-- branch='1' when "beq"; branch='0' when "bne"
-    pc_in: in integer;
+    pc_in: in integer := 0;
     jump: in std_logic;
     jump_addr: in std_logic_vector(25 downto 0);
-    
-    code: in std_logic_vector(31 downto 0);
 
 	  destination_reg: in std_logic_vector(4 downto 0);
 	  write_en: in std_logic := '0';
@@ -28,8 +26,6 @@ entity EX_stage is
     mem_read_out: out std_logic;
     mem_write_out: out std_logic;
     wb_src_out: out std_logic;
-
-    code_go: out std_logic_vector(31 downto 0);
 
 	  mem_wdata : out std_logic_vector(31 downto 0);
 	  result : out std_logic_vector(31 downto 0) := (others => '0');
@@ -107,7 +103,6 @@ MUX3: MUX port map(Mux2_res, J_addr, Mux3_src, B_addr);
 	begin
 	  if (stall='0') then			
      if falling_edge(clock) then
-        code_go <= code;
         -- output
         mem_wdata <= RD2;
         result <= Alu_res;

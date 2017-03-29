@@ -12,9 +12,6 @@ entity WB_stage is
 	destination_reg: in std_logic_vector(4 downto 0);
 	write_en: in std_logic := '0';
 
-	code    : in std_logic_vector(31 downto 0);
-    code_go : out std_logic_vector(31 downto 0);
-
 	destination_reg_go: out std_logic_vector(4 downto 0);
 	write_en_go: out std_logic := '0';
 	output : out std_logic_vector(31 downto 0) := (others => '0')
@@ -42,7 +39,6 @@ MUX1: MUX port map(RD, Alu_res, Mux_src, Mux_res);
 	--begin
 	--	if rising_edge(clock) then
 	--		if (stall='0') then
-				code_go <= code;
 				RD <= read_data;
 				Alu_res <= alu_result;
 				Mux_src <= src;

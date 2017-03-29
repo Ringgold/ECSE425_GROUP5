@@ -37,7 +37,7 @@ begin
 					op_and when(opcode = "100100" or opcode = "001100") else
 					op_or when(opcode = "100101" or opcode = "001101") else
 					op_nor when(opcode = "100111") else
-					op_xor when(opcode = "100110" or opcode = "001110") else
+					op_xor when(opcode = "100110" or opcode = "101000") else
 					mfhi when(opcode = "010000") else
 					mflo when(opcode = "010010") else
 					lui when(opcode = "001111") else

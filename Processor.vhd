@@ -26,27 +26,11 @@ architecture Pro_Arch of Processor is
   signal address: std_logic_vector(25 downto 0);
   signal stall: std_logic := '0';
   
-  
-  --REGISTER SIGNALS
-  signal IF_ID_Reg_input : std_logic_vector(31 downto 0) := (others => '0');
-  signal IF_ID_Reg_enable : std_logic := '1';
-  signal IF_ID_Reg_output : std_logic_vector(31 downto 0) := (others => '0');
-  
-  signal ID_EX_Reg_input : std_logic_vector(138 downto 0) := (others => '0');
-  signal ID_EX_Reg_enable : std_logic := '1';
-  signal ID_EX_Reg_output : std_logic_vector(138 downto 0) := (others => '0');
-  
-  signal EX_MEM_Reg_input : std_logic_vector(100 downto 0) := (others => '0');
-  signal EX_MEM_Reg_enable : std_logic := '1';
-  signal EX_MEM_Reg_output : std_logic_vector(100 downto 0) := (others => '0');
-  
-  signal MEM_WB_Reg_input : std_logic_vector(100 downto 0) := (others => '0'); 
-  signal MEM_WB_Reg_enable : std_logic := '1';
-  signal MEM_WB_Reg_output : std_logic_vector(100 downto 0) := (others => '0');
 
   --IF SIGNALS
   signal branch_in_if : std_logic;
   signal branch_adr_in_if : integer;
+  signal pc_out_if : integer;
   signal stall_in_if : std_logic;
   
   
@@ -55,7 +39,6 @@ architecture Pro_Arch of Processor is
   signal rd_in_id : std_logic_vector(4 downto 0);  
   signal write_data_id : std_logic_vector(31 downto 0);
   signal write_en_id : std_logic := '0';
-  signal stall_H_in_id : std_logic := '0';
   signal opcode_out_id : std_logic_vector(5 downto 0);
   signal rs_out_id : std_logic_vector(31 downto 0);
   signal rt_out_id : std_logic_vector(31 downto 0);
@@ -68,11 +51,11 @@ architecture Pro_Arch of Processor is
   signal mem_write_out_id : std_logic;
   signal wb_src_out_id : std_logic;
   signal branch_out_id : std_logic;
-  signal jump_out_id : std_logic;
   signal destination_reg_go_out_id : std_logic_vector(4 downto 0);
   signal write_en_go_out_id : std_logic := '0';
-  signal code_go_out_id : std_logic_vector(31 downto 0);
-
+  signal jump_address_out_id : std_logic_vector(31 downto 0);
+  signal jump_en_out_id : std_logic;
+  signal stall_out_id : std_logic;
   
   --EX SIGNALS
   signal rs_in_ex : std_logic_vector(31 downto 0);
@@ -98,8 +81,6 @@ architecture Pro_Arch of Processor is
 	signal result_out_ex : std_logic_vector(31 downto 0):= (others => '0');
 	signal taken_out_ex : std_logic;
 	signal branch_addr_out_ex : integer;
-  signal code_in_ex : std_logic_vector(31 downto 0);
-  signal code_go_out_ex : std_logic_vector(31 downto 0);
 	
 	--MEM SIGNALS
 	signal	register_data_in_mem : std_logic_vector(31 downto 0);
@@ -114,8 +95,6 @@ architecture Pro_Arch of Processor is
   signal wb_src_out_mem : std_logic;
   signal	memory_data_out_mem : std_logic_vector(31 downto 0);
   signal	alu_result_go_out_mem : std_logic_vector(31 downto 0):= (others => '0');
-  signal code_in_mem : std_logic_vector(31 downto 0);
-  signal code_go_out_mem : std_logic_vector(31 downto 0);
   
   
   --WB SIGNALS
@@ -127,28 +106,8 @@ architecture Pro_Arch of Processor is
 	signal destination_reg_go_out_wb : std_logic_vector(4 downto 0);
 	signal write_en_go_out_wb : std_logic := '0';
 	signal output_out_wb : std_logic_vector(31 downto 0):= (others => '0');
-  signal code_in_wb : std_logic_vector(31 downto 0);
-  signal code_go_out_wb : std_logic_vector(31 downto 0);
-
-  --HDU SIGNALS
-  signal id_code_in_hdu : std_logic_vector(31 downto 0);
-  signal ex_code_in_hdu : std_logic_vector(31 downto 0);
-  signal mem_code_in_hdu : std_logic_vector(31 downto 0);
-  signal wb_code_in_hdu : std_logic_vector(31 downto 0);
-	signal stall_out_hdu : std_logic;
 	
-  
-  component Reg
-    generic(
-      size : integer
-    );
-    port(
-      clock : in std_logic;
-      input : in std_logic_vector(size-1 downto 0);
-      enable : in std_logic;
-      output : out std_logic_vector(size-1 downto 0)
-    );
-  end component;
+	
   
   component IF_stage 
     port(
@@ -169,7 +128,6 @@ architecture Pro_Arch of Processor is
     clock : in std_logic;
     reset : in std_logic;
     stall : out std_logic;
-    stall_H : in std_logic;
     instruction : in std_logic_vector(31 downto 0);     --instruction to decode
     pc_in : in integer;                                 --current pc
     rd_in : in std_logic_vector(4 downto 0);          --destination register
@@ -181,15 +139,16 @@ architecture Pro_Arch of Processor is
     immediate_out : out std_logic_vector(31 downto 0);  --immediate value shifted appropriately
     address_out : out std_logic_vector(25 downto 0);    -- address for J instructions
     pc_out : out integer;                               --new pc
+    jump_address : out std_logic_vector(31 downto 0);   --jr address
+    jump_en : out std_logic;
+    
     destination_reg_go : out std_logic_vector(4 downto 0); --the destination to pass to WB_stage in order to make the WB work
     write_en_go: out std_logic;
     mem_read: out std_logic;
     mem_write: out std_logic;
     wb_src: out std_logic;
     alu_src: out std_logic;
-    branch: out std_logic;
-    jump: out std_logic;
-    code_go : out std_logic_vector(31 downto 0)
+    branch: out std_logic
   );
   end component;
   
@@ -220,9 +179,7 @@ architecture Pro_Arch of Processor is
 	    mem_wdata : out std_logic_vector(31 downto 0);
 	    result : out std_logic_vector(31 downto 0);
 	    taken: out std_logic;
-	    branch_addr: out integer;
-      code : in std_logic_vector(31 downto 0);
-      code_go : out std_logic_vector(31 downto 0)	
+	    branch_addr: out integer	
     );
   end component;
   
@@ -242,9 +199,7 @@ architecture Pro_Arch of Processor is
     	 write_en_go: out std_logic;
       wb_src_out: out std_logic;
     	 memory_data: out std_logic_vector(31 downto 0); --passed from memory to WB
-    	 alu_result_go: out std_logic_vector(31 downto 0); -- redult from ALU to be forwarded to WB
-       code : in std_logic_vector(31 downto 0);
-      code_go : out std_logic_vector(31 downto 0)
+    	 alu_result_go: out std_logic_vector(31 downto 0) -- redult from ALU to be forwarded to WB
     );
   end component;
   
@@ -260,73 +215,14 @@ architecture Pro_Arch of Processor is
 
 	   destination_reg_go: out std_logic_vector(4 downto 0);
 	   write_en_go: out std_logic;
-	   output : out std_logic_vector(31 downto 0);
-     code : in std_logic_vector(31 downto 0);
-     code_go : out std_logic_vector(31 downto 0)
+	   output : out std_logic_vector(31 downto 0)
     );
   end component;
-  
-  component Hazard_Detecting_Unit
-    port(
-      ID_Code  : in  std_logic_vector(31 downto 0);
-      EX_Code  : in  std_logic_vector(31 downto 0);
-      MEM_Code : in  std_logic_vector(31 downto 0);
-      WB_Code  : in  std_logic_vector(31 downto 0);
-      stall    : out std_logic
-    );
-  end component;
-  
-  
-  
-  
   
   
   
 begin
   
-  IF_ID_Register : Reg
-  generic map(
-    size => 32
-  )
-  port map(
-    clock => clock,
-    input => IF_ID_Reg_input,
-    enable => IF_ID_Reg_enable,
-    output => IF_ID_Reg_output
-  );
-  
-  ID_EX_Register : Reg
-  generic map(
-    size => 139
-  )
-  port map(
-    clock => clock,
-    input => ID_EX_Reg_input,
-    enable => ID_EX_Reg_enable,
-    output => ID_EX_Reg_output
-  );
-  
-  EX_MEM_Register : Reg
-  generic map(
-    size => 101
-  )
-  port map(
-    clock => clock,
-    input => EX_MEM_Reg_input,
-    enable => EX_MEM_Reg_enable,
-    output => EX_MEM_Reg_output
-  );
-  
-  MEM_WB_Register : Reg
-  generic map(
-    size => 101
-  )
-  port map(
-    clock => clock,
-    input => MEM_WB_Reg_input,
-    enable => MEM_WB_Reg_enable,
-    output => MEM_WB_Reg_output
-  );
     
   instruction_fetch_stage : IF_stage
   port map(
@@ -336,7 +232,7 @@ begin
     start => start,
     i_memread => i_memread,
     i_memwrite => i_memwrite,
-    pc => pc,
+    pc => pc_out_if,
     branch => branch_in_if,
     branch_adr => branch_adr_in_if  
   );
@@ -345,8 +241,7 @@ begin
   port map(
     clock => clock,
     reset => reset,
-    stall => stall,
-    stall_H => stall_H_in_id,
+    stall => stall_out_id,
     instruction => instruction_in_id,
     pc_in => pc_in_id,
     rd_in => rd_in_id,
@@ -358,23 +253,23 @@ begin
     immediate_out => immediate_out_id,
     address_out => address_out_id,
     pc_out => pc_out_id, 
+    jump_address => jump_address_out_id,
+    jump_en => jump_en_out_id,
     
-    code_go => code_go_out_id,
     destination_reg_go => destination_reg_go_out_id,
     write_en_go => write_en_go_out_id,
     mem_read => mem_read_out_id,
     mem_write => mem_write_out_id,
     wb_src => wb_src_out_id,
     alu_src => alu_src_out_id,
-    branch => branch_out_id,
-    jump => jump_out_id
+    branch => branch_out_id   
   );
   
   execute_stage : EX_stage
   port map(
     clock => clock,
 	  stall => stall,
-      rs => rs_in_ex,
+    rs => rs_in_ex,
 	  rt => rt_in_ex,
 	  imm => immediate_in_ex,
 	  opcode => opcode_in_ex,
@@ -384,9 +279,6 @@ begin
 	  jump => jump_in_ex,
 	  jump_addr => jump_addr_in_ex,
 	  
-    code => code_in_ex,
-    code_go => code_go_out_ex,
-
 	  destination_reg => destination_reg_in_ex,
 	  write_en => write_en_in_ex,
 	  mem_read_in => mem_read_in_ex,
@@ -394,7 +286,7 @@ begin
 	  wb_src_in => wb_src_in_ex,
 	  destination_reg_go => destination_reg_out_ex,	  
 	  mem_read_out => mem_read_out_ex,
-      mem_write_out => mem_write_out_ex,
+    mem_write_out => mem_write_out_ex,    
 	  write_en_go => write_en_go_out_ex,
 	  wb_src_out => wb_src_out_ex,
 	  mem_wdata => mem_wdata_out_ex,
@@ -415,9 +307,6 @@ begin
   	 write_en => write_en_in_mem,
     wb_src_in => wb_src_in_mem,
 
-    code => code_in_mem,
-    code_go => code_go_out_mem,
-
   	 destination_reg_go => destination_reg_go_out_mem,
   	 write_en_go => write_en_go_out_mem,
     wb_src_out => wb_src_out_mem,
@@ -435,98 +324,78 @@ begin
 	  destination_reg => destination_reg_in_wb,
 	  write_en => write_en_in_wb,
 
-    code => code_in_wb,
-    code_go => code_go_out_wb,
-
 	  destination_reg_go => destination_reg_go_out_wb,
 	  write_en_go => write_en_go_out_wb,
 	  output => output_out_wb
   );
   
-  HDU : Hazard_Detecting_Unit
-  port map(
-      ID_Code  => id_code_in_hdu,
-      EX_Code  => ex_code_in_hdu,
-      MEM_Code => mem_code_in_hdu,
-      WB_Code  => wb_code_in_hdu,
-      stall    => stall_out_hdu
-  );
-  --PIPELINE REGISTERS CONNECTIONS WITH OTHER STAGES
   
-  IF_ID_Reg_input <= input;
-  instruction_in_id <= IF_ID_Reg_output;
   
-      --139                      32                5                       32          32          32                  6                 
-  ID_EX_Reg_input <= code_go_out_id & destination_reg_go_out_id & rs_out_id & rt_out_id & immediate_out_id & opcode_out_id;
-  code_in_ex <= ID_EX_Reg_output(138 downto 107);
-  destination_reg_in_ex <= ID_EX_Reg_output(106 downto 102);
-  rs_in_ex <= ID_EX_Reg_output(101 downto 70);
-  rt_in_ex <= ID_EX_Reg_output(69 downto 38);
-  immediate_in_ex <= ID_EX_Reg_output(37 downto 6);
-  opcode_in_ex <= ID_EX_Reg_output(5 downto 0);
-  jump_addr_in_ex <= address_out_id;
   
-      --101                  32               32                  5                 	       32
-  EX_MEM_Reg_input <= code_go_out_ex & mem_wdata_out_ex & destination_reg_out_ex & result_out_ex;
-  code_in_mem <= EX_MEM_Reg_output(100 downto 69);
-  register_data_in_mem <= EX_MEM_Reg_output(68 downto 37);
-  destination_reg_in_mem <= EX_MEM_Reg_output(36 downto 32);
-  alu_result_in_mem <= EX_MEM_Reg_output(31 downto 0);
-  
-      --101                   32                       5                           32
-  MEM_WB_Reg_input <= code_go_out_mem & memory_data_out_mem & destination_reg_go_out_mem & alu_result_go_out_mem;
-  code_in_wb <= MEM_WB_Reg_output(100 downto 69);
-  read_data_in_wb <= MEM_WB_Reg_output(68 downto 37);
-  destination_reg_in_wb <= MEM_WB_Reg_output(36 downto 32);
-  alu_result_in_wb <= MEM_WB_Reg_output(31 downto 0);
-  
+  --wb to id
   rd_in_id <= destination_reg_go_out_wb;
   write_en_id <= write_en_go_out_wb;
   write_data_id <= output_out_wb;
+
+  --pc from if to i_memory
+  pc <= pc_out_if;
+  
+  
+  --id to if
+  stall_in_if <= stall_out_id;
+  branch_in_if <= jump_en_out_id;
+  branch_adr_in_if <= to_integer(unsigned(jump_address_out_id));
   
   process(clock)
+    variable previous_instruction : std_logic_vector(31 downto 0) := (others => '0');
     begin
       if rising_edge(clock) then 
+        previous_instruction := instruction_in_id;
+        
+        --if to id
+        if stall_out_id = '1' then
+          instruction_in_id <= previous_instruction;
+        elsif jump_en_out_id = '1' then
+          instruction_in_id <= "00000000000000000000000000100000"; --stall with add $0, $0, $0
+        else
+          instruction_in_id <= input;
+        end if; 
+        pc_in_id <= pc_out_if;
+               
+        
         --id to ex
+        destination_reg_in_ex <= destination_reg_go_out_id;
+        rs_in_ex <= rs_out_id;        
+        rt_in_ex <= rt_out_id;
+        immediate_in_ex <= immediate_out_id;
+        opcode_in_ex <= opcode_out_id;  
         alu_src_in_ex <= alu_src_out_id;
         branch_in_ex <= branch_out_id;
-        pc_in_ex <= pc_out_id;
-        jump_in_ex <= jump_out_id;
         mem_read_in_ex <= mem_read_out_id;
         mem_write_in_ex <= mem_write_out_id;
         write_en_in_ex <= write_en_go_out_id;
         wb_src_in_ex <= wb_src_out_id;
+        jump_in_ex <= branch_out_id;
+        jump_addr_in_ex <= address_out_id;
         
         --ex to mem
+        register_data_in_mem <= mem_wdata_out_ex;
+        destination_reg_in_mem <= destination_reg_out_ex;
+        alu_result_in_mem <= result_out_ex;      
         memRead_in_mem <= mem_read_out_ex;
         memWrite_in_mem <= mem_write_out_ex;
         write_en_in_mem <= write_en_go_out_ex;
         wb_src_in_mem <= wb_src_out_ex;
         
         --mem to wb
+        read_data_in_wb <= memory_data_out_mem;
+        destination_reg_in_wb <= destination_reg_go_out_mem;
+        alu_result_in_wb <= alu_result_go_out_mem;
         src_in_wb <= wb_src_out_mem;
         write_en_in_wb <= write_en_go_out_mem;
-
-        --wb to HDU
-        id_code_in_hdu <= code_go_out_id;
-        ex_code_in_hdu <= code_go_out_ex;
-        mem_code_in_hdu <= code_go_out_mem;
-        wb_code_in_hdu <= code_go_out_wb;
-
-        stall_in_if <= stall_out_hdu;
-        stall_H_in_id <= stall_out_hdu;
-
-
-
-
       end if;
     end process;
-  
-  
-    
-    
-  
-  
+   
 end Pro_Arch;
 
       

@@ -19,9 +19,6 @@ entity MEM_stage is
    	write_en: in std_logic;
     wb_src_in: in std_logic;
 
-    code    : in std_logic_vector(31 downto 0);
-    code_go : out std_logic_vector(31 downto 0);
-
    	destination_reg_go: out std_logic_vector(4 downto 0) := (others => '0');
    	write_en_go: out std_logic := '0';
     wb_src_out: out std_logic;
@@ -62,18 +59,17 @@ MEM1: data_memory port map(clock, wd, alu, mw, mr, rd);
       	mw <= memWrite;
 
 
-Stage_process : process (clock)
-begin
-  	if clock = '0' then
-  		if (stall='0') then
-  			code_go <= code;
+--Stage_process : process (clock)
+--begin
+--  	if clock = '0' then
+--  		if (stall='0') then
   		    wd <= register_data; 
 		    alu_result_go <= alu_result;
 		    destination_reg_go <= destination_reg;
 		    write_en_go <= write_en;
             wb_src_out <= wb_src_in;
-		end if;
-    end if;
-end process;
+--		end if;
+--    end if;
+--end process;
 memory_data <= rd;	
 end beh;

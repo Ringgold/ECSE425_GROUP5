@@ -38,15 +38,14 @@ BEGIN
 		end if;
 
 		--This is the actual synthesizable SRAM block
-		IF clock = '0' THEN
-			address_int <= address;
+		IF falling_edge(clock) THEN
 			IF (memwrite = '1') THEN
-				ram_block(address_int) <= writedata;
+				ram_block(address) <= writedata;
 			END IF;
-		read_address_reg <= address_int;
+		read_address_reg <= address;
 		END IF;
 	END PROCESS;
-	readdata <= ram_block(address_int);
+	readdata <= ram_block(address);
 
 
 END rtl;
