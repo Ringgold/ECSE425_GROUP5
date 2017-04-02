@@ -12,6 +12,7 @@ entity ID_stage is
     rd_in : in std_logic_vector(4 downto 0);                                --destination register
     write_data : in std_logic_vector(31 downto 0);                          --data to write to rd
     write_en : in std_logic;                                                --write enable
+    predict_taken : in std_logic;
     opcode_out : out std_logic_vector(5 downto 0);                        --opcode of current instruction
     rs_out : out std_logic_vector(31 downto 0) := (others => '0');         --data in rs register
     rt_out : out std_logic_vector(31 downto 0) := (others => '0');         --data in rt register
@@ -27,13 +28,17 @@ entity ID_stage is
     mem_write: out std_logic;
     wb_src: out std_logic;
     alu_src: out std_logic;
-    branch: out std_logic
+    branch: out std_logic;
+    
+    branch_outcome: out std_logic := '0';
+    btb_index: out integer := 0;
+    mispredicted: out std_logic := '0'
   );
 end ID_stage;
 
 architecture ID_arch of ID_stage is
   type registers is array (31 downto 0) of std_logic_vector(31 downto 0);
-  signal reg_block : registers := (1 => "00000000000000000000000000000101", 2 => "00000000000000000000000000001011", others =>(others=>'0'));
+  signal reg_block : registers := (others =>(others => '0')); --:= (1 => "00000000000000000000000000000101", 2 => "00000000000000000000000000001011", others =>(others=>'0'));
   signal registers_in_use : std_logic_vector(31 downto 0) := (others => '0');
   signal opcode : std_logic_vector(5 downto 0);
   signal rs : std_logic_vector(4 downto 0) := (others => '0');
@@ -112,6 +117,7 @@ begin
         branch <= '0';
         jump_en <= '0';
         stall <= '0';
+        mispredicted <= '0';
 
 
       --write result to register during first half of cc
@@ -249,13 +255,29 @@ begin
                         opcode_out <= "100000";
                         jump_address <= "0000000000000000" & immediate;
                         jump_en <= '1';
+                        branch_outcome <= '1';
+                        btb_index <= to_integer(unsigned(immediate(2 downto 0)));
                     else
-                        rs_out <= (others => '0');
-                        rt_out <= (others => '0');    
-                        destination_reg_go <= (others => '0');
-                        immediate_out <= (others => '0');
-                        wb_src <= '1';
-                        opcode_out <= "100000";
+                        if predict_taken = '1' then 
+                            mispredicted <= '1';
+                            rs_out <= (others => '0');
+                            rt_out <= (others => '0');    
+                            destination_reg_go <= (others => '0');
+                            immediate_out <= (others => '0');
+                            wb_src <= '1';
+                            branch_outcome <= '0';
+                            btb_index <= to_integer(unsigned(immediate(2 downto 0)));
+                            opcode_out <= "100000";
+                        else
+                            rs_out <= (others => '0');
+                            rt_out <= (others => '0');    
+                            destination_reg_go <= (others => '0');
+                            immediate_out <= (others => '0');
+                            wb_src <= '1';
+                            branch_outcome <= '0';
+                            btb_index <= to_integer(unsigned(immediate(2 downto 0)));
+                            opcode_out <= "100000";
+                        end if;
                     end if;
                     
                 elsif opcode = "000101" then  --bne
@@ -268,13 +290,29 @@ begin
                         opcode_out <= "100000";
                         jump_address <= "0000000000000000" & immediate;
                         jump_en <= '1';
+                        branch_outcome <= '1';
+                        btb_index <= to_integer(unsigned(immediate(2 downto 0)));
                     else
-                        rs_out <= (others => '0');
-                        rt_out <= (others => '0');    
-                        destination_reg_go <= (others => '0');
-                        immediate_out <= (others => '0');
-                        wb_src <= '1';
-                        opcode_out <= "100000";
+                        if predict_taken = '1' then 
+                            mispredicted <= '1';
+                            rs_out <= (others => '0');
+                            rt_out <= (others => '0');    
+                            destination_reg_go <= (others => '0');
+                            immediate_out <= (others => '0');
+                            wb_src <= '1';
+                            branch_outcome <= '0';
+                            btb_index <= to_integer(unsigned(immediate(2 downto 0)));
+                            opcode_out <= "100000";
+                        else
+                            rs_out <= (others => '0');
+                            rt_out <= (others => '0');    
+                            destination_reg_go <= (others => '0');
+                            immediate_out <= (others => '0');
+                            wb_src <= '1';
+                            branch_outcome <= '0';
+                            btb_index <= to_integer(unsigned(immediate(2 downto 0)));
+                            opcode_out <= "100000";
+                        end if;
                     end if;
                     
                 elsif opcode = "100011" then  --LW

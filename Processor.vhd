@@ -32,7 +32,11 @@ architecture Pro_Arch of Processor is
   signal branch_adr_in_if : integer;
   signal pc_out_if : integer;
   signal stall_in_if : std_logic;
-  
+  signal branch_outcome_in_if : std_logic;
+  signal btb_index_in_if : integer;
+  signal cancel_stall_out_if : std_logic;
+  signal predict_taken_out_if : std_logic;
+  signal mispredicted_in_if : std_logic;
   
   --ID SIGNALS
   signal pc_in_id : integer;
@@ -56,6 +60,10 @@ architecture Pro_Arch of Processor is
   signal jump_address_out_id : std_logic_vector(31 downto 0);
   signal jump_en_out_id : std_logic;
   signal stall_out_id : std_logic;
+  signal branch_outcome_out_id : std_logic;
+  signal btb_index_out_id : integer;
+  signal predict_taken_in_id : std_logic;
+  signal mispredicted_out_id : std_logic;
   
   --EX SIGNALS
   signal rs_in_ex : std_logic_vector(31 downto 0);
@@ -117,9 +125,15 @@ architecture Pro_Arch of Processor is
       start : in std_logic;
       branch : in std_logic;  -- enable branching
       branch_adr : in integer; --branch address
+      fetched_instruction : in std_logic_vector(31 downto 0);
+      branch_outcome : in std_logic;
+      btb_index : in integer;
+      mispredicted : in std_logic;
       i_memread : out std_logic;
       i_memwrite : out std_logic;
-      pc : out integer := 0
+      pc : out integer := 0;
+      cancel_stall : out std_logic := '0';
+      predict_taken : out std_logic := '0'
     );
   end component;
   
@@ -133,6 +147,7 @@ architecture Pro_Arch of Processor is
     rd_in : in std_logic_vector(4 downto 0);          --destination register
     write_data : in std_logic_vector(31 downto 0);      --data to write to rd
     write_en : in std_logic;                            --write enable
+    predict_taken : in std_logic;
     opcode_out : out std_logic_vector(5 downto 0);      --opcode of current instruction
     rs_out : out std_logic_vector(31 downto 0);         --data in rs register
     rt_out : out std_logic_vector(31 downto 0);         --data in rt register
@@ -148,7 +163,11 @@ architecture Pro_Arch of Processor is
     mem_write: out std_logic;
     wb_src: out std_logic;
     alu_src: out std_logic;
-    branch: out std_logic
+    branch: out std_logic;
+    
+    branch_outcome: out std_logic;
+    btb_index: out integer;
+    mispredicted: out std_logic := '0'
   );
   end component;
   
@@ -232,9 +251,15 @@ begin
     start => start,
     i_memread => i_memread,
     i_memwrite => i_memwrite,
+    fetched_instruction => input,
     pc => pc_out_if,
     branch => branch_in_if,
-    branch_adr => branch_adr_in_if  
+    branch_adr => branch_adr_in_if,
+    branch_outcome => branch_outcome_in_if,
+    btb_index => btb_index_in_if,
+    cancel_stall => cancel_stall_out_if,
+    predict_taken => predict_taken_out_if,
+    mispredicted => mispredicted_in_if
   );
   
   instruction_decode_stage : ID_stage
@@ -247,6 +272,7 @@ begin
     rd_in => rd_in_id,
     write_data => write_data_id,
     write_en => write_en_id,
+    predict_taken => predict_taken_in_id,
     opcode_out => opcode_out_id,
     rs_out => rs_out_id,
     rt_out => rt_out_id,
@@ -262,7 +288,11 @@ begin
     mem_write => mem_write_out_id,
     wb_src => wb_src_out_id,
     alu_src => alu_src_out_id,
-    branch => branch_out_id   
+    branch => branch_out_id,
+    
+    branch_outcome => branch_outcome_out_id,
+    btb_index => btb_index_out_id,
+    mispredicted => mispredicted_out_id
   );
   
   execute_stage : EX_stage
@@ -345,6 +375,7 @@ begin
   stall_in_if <= stall_out_id;
   branch_in_if <= jump_en_out_id;
   branch_adr_in_if <= to_integer(unsigned(jump_address_out_id));
+  mispredicted_in_if <= mispredicted_out_id;
   
   process(clock)
     variable previous_instruction : std_logic_vector(31 downto 0) := (others => '0');
@@ -355,13 +386,20 @@ begin
         --if to id
         if stall_out_id = '1' then
           instruction_in_id <= previous_instruction;
-        elsif jump_en_out_id = '1' then
+        elsif jump_en_out_id = '1' and cancel_stall_out_if = '0' then
+          instruction_in_id <= "00000000000000000000000000100000"; --stall with add $0, $0, $0
+        elsif mispredicted_out_id = '1' then
           instruction_in_id <= "00000000000000000000000000100000"; --stall with add $0, $0, $0
         else
           instruction_in_id <= input;
         end if; 
         pc_in_id <= pc_out_if;
+        predict_taken_in_id <= predict_taken_out_if;
                
+        --id to if
+        branch_outcome_in_if <= branch_outcome_out_id;
+        btb_index_in_if <= btb_index_out_id;
+        
         
         --id to ex
         destination_reg_in_ex <= destination_reg_go_out_id;
