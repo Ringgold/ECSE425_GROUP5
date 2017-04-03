@@ -109,8 +109,8 @@ begin
             program_counter <= program_counter +1;
           end if;
           
-        elsif rising_edge(stall) then
-          previous_pc <= previous_pc;
+        elsif rising_edge(stall) then 
+          previous_pc <= previous_pc; -- this line prevent the current stalled data from being lost
           program_counter <= previous_pc;
           pc <= previous_pc;
           i_memread <= '1';
