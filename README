@@ -1,0 +1,5 @@
+Link to the repository:
+https://github.com/krafftsimon/ECSE425_GROUP5
+
+1-bit predictor folder contains the pipelined processor with 1 bit prediction.
+2-bit predictor folder contains the pipelined processor with 2 bit prediction.
